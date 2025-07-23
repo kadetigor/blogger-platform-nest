@@ -2,7 +2,6 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Blog, BlogModelType } from "../../domain/blog.entity";
 import { BlogViewDto } from "../../api/view-dto/blogs.view-dto";
-import { GetUsersQueryParams } from "src/modules/user-accounts/api/input-dto/get-users-query-params.input-dto";
 import { PaginatedViewDto } from "src/core/dto/base.paginated.view-dto";
 import { FilterQuery } from "mongoose";
 import { GetBlogsQueryParams } from "../../api/input-dto/get-blogs-query-params.input-dto";
@@ -50,14 +49,14 @@ export class BlogsQueryRepository {
           });
         }
     
-        const users = await this.BlogModel.find(filter)
+        const blog = await this.BlogModel.find(filter)
           .sort({ [query.sortBy]: query.sortDirection })
           .skip(query.calculateSkip())
           .limit(query.pageSize);
     
         const totalCount = await this.BlogModel.countDocuments(filter);
     
-        const items = users.map(BlogViewDto.mapToView);
+        const items = blog.map(BlogViewDto.mapToView);
     
         return PaginatedViewDto.mapToView({
           items,

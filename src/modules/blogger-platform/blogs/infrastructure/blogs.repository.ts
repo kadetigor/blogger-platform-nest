@@ -20,16 +20,6 @@ export class BlogsRepository {
         await blog.save()
     }
 
-    async findOrNotFoundFail(id: string):Promise<BlogDocument> {
-        const blog = await this.findById(id);
-
-        if (!blog) {
-            throw new NotFoundException('blog not found')
-        }
-
-        return blog;
-    }
-
     async create(newBlog: Blog): Promise<string> {
         const blog = new this.BlogModel(newBlog);
         const savedBlog = await blog.save();
