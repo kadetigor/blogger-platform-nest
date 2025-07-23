@@ -1,17 +1,15 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query } from "@nestjs/common";
 import { BlogsQueryRepository } from "../infrastructure/query/blogs.query-repository";
-import { BlogsRepository } from "../infrastructure/blogs.repository";
 import { ApiParam } from "@nestjs/swagger";
 import { BlogViewDto } from "./view-dto/blogs.view-dto";
 import { GetBlogsQueryParams } from "./input-dto/get-blogs-query-params.input-dto";
 import { PaginatedViewDto } from "src/core/dto/base.paginated.view-dto";
-import { CreateBlogDto, UpdateBlogDto } from "../dto/create-blog.dto";
 import { CreateBlogInputDto } from "./input-dto/blogs.input-dto";
 import { BlogsService } from "../application/blogs.service";
 import { UpdateBlogInputDto } from "./input-dto/update-blog.input-dto";
 
 
-@Controller()
+@Controller('blogs')
 export class BlogsController {
 
     constructor(
@@ -41,6 +39,7 @@ export class BlogsController {
     }
 
     @Put(':id')
+    //@HttpCode(204)
     async updateBlog(@Param('id') id: string, @Body() body: UpdateBlogInputDto): Promise<BlogViewDto> {
         const blogId = await this.blogsService.updateBlog(id, body)
         return this.blogsQueryRepository.getByIdOrNotFoundFail(blogId.id);
