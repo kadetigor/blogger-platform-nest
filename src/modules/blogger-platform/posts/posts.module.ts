@@ -18,7 +18,6 @@ import { BlogsModule } from '../blogs/blogs.module';
     PostsService,
     PostsRepository,
     PostsQueryRepository,
-    BlogsExternalQueryRepository
   ],
   exports: [],
 })
