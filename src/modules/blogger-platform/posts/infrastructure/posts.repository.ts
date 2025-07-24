@@ -23,7 +23,7 @@ export class PostsRepository {
     return savedPost._id.toString();
   }
 
-  async updatePost(id: string, dto: CreatePostDto): Promise<void> {
+  async updatePost(id: string, dto: CreatePostDto & { blogName?: string }): Promise<void> {
     const result = await this.PostModel.findByIdAndUpdate(
       id,
       {
@@ -31,6 +31,7 @@ export class PostsRepository {
         shortDescription: dto.shortDescription,
         content: dto.content,
         blogId: dto.blogId,
+        blogName: dto.blogName,
       },
       { runValidators: true }
     );

@@ -26,12 +26,13 @@ export class Post {
     @Prop({ type: Date, nullable: true })
     deletedAt: Date | null;
 
-    static createInstance(dto: CreatePostDto): PostDocument {
+    static createInstance(dto: CreatePostDto & { blogName: string }): PostDocument {
         const post = new this();
         post.title = dto.title;
         post.shortDescription = dto.shortDescription;
         post.content = dto.content;
         post.blogId = dto.blogId;
+        post.blogName = dto.blogName;
 
         return post as PostDocument
     }

@@ -3,7 +3,7 @@ import { CreatePostDto } from '../dto/create-post.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Post, PostModelType } from '../domain/post.entity';
 import { PostsRepository } from '../infrastructure/posts.repository';
-import { PostViewDto } from '../api/view-dto/post.view-dto';
+import { BlogsExternalQueryRepository } from '../../blogs/infrastructure/external-query/blogs.external-query-repository';
 
 @Injectable()
 export class PostsService {
@@ -12,15 +12,20 @@ export class PostsService {
     @InjectModel(Post.name)
     private PostModel: PostModelType,
     private postsRepository: PostsRepository,
+    private blogsExternalQueryRepository: BlogsExternalQueryRepository,
   ) {}
 
   async createPost(dto: CreatePostDto): Promise<string> {
+
+    // Fetch the blog to get its name
+    const blog = await this.blogsExternalQueryRepository.getByIdOrNotFoundFail(dto.blogId);
 
     const post = this.PostModel.createInstance({
       title: dto.title,
       shortDescription: dto.shortDescription,
       content: dto.content,
-      blogId: dto.blogId
+      blogId: dto.blogId,
+      blogName: blog.name
     })
 
     return this.postsRepository.createPost(post);

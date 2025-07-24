@@ -5,6 +5,7 @@ import { BlogsQueryRepository } from "./infrastructure/query/blogs.query-reposit
 import { Blog, BlogSchema } from "./domain/blog.entity";
 import { MongooseModule } from "@nestjs/mongoose";
 import { BlogsController } from "./api/blogs.controller";
+import { BlogsExternalQueryRepository } from "./infrastructure/external-query/blogs.external-query-repository";
 
 @Module({
     imports: [
@@ -15,8 +16,9 @@ import { BlogsController } from "./api/blogs.controller";
         BlogsRepository,
         BlogsQueryRepository,
         BlogsService,
+        BlogsExternalQueryRepository
     ],
-    exports: [],
+    exports: [BlogsExternalQueryRepository],
 })
 
 export class BlogsModule {}
