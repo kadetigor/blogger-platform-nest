@@ -5,8 +5,9 @@ import { PostsRepository } from './infrastructure/posts.repository';
 import { PostsQueryRepository } from './infrastructure/query/posts.query-repository';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Post, PostSchema } from './domain/post.entity';
-import { BlogsExternalQueryRepository } from '../blogs/infrastructure/external-query/blogs.external-query-repository';
 import { BlogsModule } from '../blogs/blogs.module';
+import { PostsExternalQueryRepository } from './infrastructure/external-query/posts.external-query-repository';
+import { PostsExternalService } from './application/posts.external-service';
 
 @Module({
   imports: [
@@ -18,7 +19,8 @@ import { BlogsModule } from '../blogs/blogs.module';
     PostsService,
     PostsRepository,
     PostsQueryRepository,
+    PostsExternalQueryRepository,
   ],
-  exports: [],
+  exports: [PostsExternalQueryRepository, PostsExternalService],
 })
 export class PostsModule {}

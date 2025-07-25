@@ -7,6 +7,11 @@ import { PaginatedViewDto } from "src/core/dto/base.paginated.view-dto";
 import { CreateBlogInputDto } from "./input-dto/blogs.input-dto";
 import { BlogsService } from "../application/blogs.service";
 import { UpdateBlogInputDto } from "./input-dto/update-blog.input-dto";
+import { PostViewDto } from "../../posts/api/view-dto/post.view-dto";
+import { PostsExternalQueryRepository } from "../../posts/infrastructure/external-query/posts.external-query-repository";
+import { GetPostsQueryParams } from "../../posts/api/input-dto/get-posts-query-params.input-dto";
+import { PostsExternalService } from "../../posts/application/posts.external-service";
+import { CreatePostDto } from "../../posts/dto/create-post.dto";
 
 
 @Controller('blogs')
@@ -15,6 +20,8 @@ export class BlogsController {
     constructor(
         private blogsQueryRepository: BlogsQueryRepository,
         private blogsService: BlogsService,
+        private postsExternalQueryRepository: PostsExternalQueryRepository,
+        private postsExternalService: PostsExternalService,
     ) {
         console.log('BlogsController created')
     }
@@ -50,4 +57,18 @@ export class BlogsController {
         await this.blogsService.deleteBlog(id)
     }
 
+    @Get(':id/posts')
+    async getPostsByBlog(
+        @Param('id') blogId: string,
+        @Query() query: GetPostsQueryParams,
+    ): Promise<PaginatedViewDto<PostViewDto[]>> {
+        const result = await this.postsExternalQueryRepository.getAllPostsByBlog(query, blogId)
+        return result
+    }
+
+    @Post(':id/posts')
+    async createPostForBlog(@Param('id') blogId: string, @Body() body: CreatePostDto): Promise<PostViewDto> {
+        const result = await this.postsExternalService.createPostForBlog(blogId, body)
+        return result
+    }
 }

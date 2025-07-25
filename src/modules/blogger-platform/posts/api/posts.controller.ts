@@ -6,6 +6,7 @@ import { ApiParam } from '@nestjs/swagger';
 import { GetPostsQueryParams } from './input-dto/get-posts-query-params.input-dto';
 import { PaginatedViewDto } from 'src/core/dto/base.paginated.view-dto';
 import { PostViewDto } from './view-dto/post.view-dto';
+import { CreatePostInputDto } from './input-dto/post.input-dto';
 
 @Controller('posts')
 export class PostsController {
@@ -26,7 +27,7 @@ export class PostsController {
   }
 
   @Post()
-  async create(@Body() dto: CreatePostDto): Promise<string> {
+  async create(@Body() dto: CreatePostInputDto): Promise<PostViewDto> {
     return this.postsService.createPost(dto);
   }
 
@@ -36,7 +37,7 @@ export class PostsController {
   }
 
   @Put(':id')
-  async update(@Param('id') id: string, @Body() dto: CreatePostDto): Promise<void> {
+  async update(@Param('id') id: string, @Body() dto: CreatePostInputDto): Promise<void> {
     return this.postsService.updatePost(id, dto);
   }
 

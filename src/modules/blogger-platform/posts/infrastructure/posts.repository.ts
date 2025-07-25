@@ -2,6 +2,9 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { Post, PostDocument, PostModelType } from "../domain/post.entity";
 import { InjectModel } from "@nestjs/mongoose";
 import { CreatePostDto } from "../dto/create-post.dto";
+import { CreatePostInputDto } from "../api/input-dto/post.input-dto";
+import { PostViewDto } from "../api/view-dto/post.view-dto";
+import { Document, Types } from "mongoose";
 
 
 @Injectable()
@@ -17,13 +20,14 @@ export class PostsRepository {
     return post;
   }
 
-  async createPost(newPost: Post): Promise<string> {
+  async createPost(newPost: Post): Promise<PostViewDto> {
     const post = new this.PostModel(newPost);
     const savedPost = await post.save() as PostDocument;
-    return savedPost._id.toString();
+    const result = PostViewDto.mapToView(savedPost)
+    return result;
   }
 
-  async updatePost(id: string, dto: CreatePostDto & { blogName?: string }): Promise<void> {
+  async updatePost(id: string, dto: CreatePostInputDto & { blogName?: string }): Promise<void> {
     const result = await this.PostModel.findByIdAndUpdate(
       id,
       {

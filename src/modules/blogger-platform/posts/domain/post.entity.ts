@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { CreatePostDto } from "../dto/create-post.dto";
 import { HydratedDocument, Model } from "mongoose";
+import { CreatePostInputDto } from "../api/input-dto/post.input-dto";
 
 @Schema({ timestamps: true })
 export class Post {
@@ -26,7 +26,7 @@ export class Post {
     @Prop({ type: Date, nullable: true })
     deletedAt: Date | null;
 
-    static createInstance(dto: CreatePostDto & { blogName: string }): PostDocument {
+    static createInstance(dto: CreatePostInputDto & { blogName: string }): PostDocument {
         const post = new this();
         post.title = dto.title;
         post.shortDescription = dto.shortDescription;

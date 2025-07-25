@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { CreatePostDto } from '../dto/create-post.dto';
 import { InjectModel } from '@nestjs/mongoose';
-import { Post, PostModelType } from '../domain/post.entity';
+import { Post, PostDocument, PostModelType } from '../domain/post.entity';
 import { PostsRepository } from '../infrastructure/posts.repository';
 import { BlogsExternalQueryRepository } from '../../blogs/infrastructure/external-query/blogs.external-query-repository';
 import { CreatePostInputDto } from '../api/input-dto/post.input-dto';
 import { PostViewDto } from '../api/view-dto/post.view-dto';
 
 @Injectable()
-export class PostsService {
+export class PostsExternalService {
 
   constructor(
     @InjectModel(Post.name)
@@ -17,20 +17,26 @@ export class PostsService {
     private blogsExternalQueryRepository: BlogsExternalQueryRepository,
   ) {}
 
-  async createPost(dto: CreatePostInputDto): Promise<PostViewDto> {
+  async createPostForBlog(blogId: string, dto: CreatePostDto): Promise<PostViewDto> {
 
     // Fetch the blog to get its name
-    const blog = await this.blogsExternalQueryRepository.getByIdOrNotFoundFail(dto.blogId);
+    const blog = await this.blogsExternalQueryRepository.getByIdOrNotFoundFail(blogId);
+
+    if(!blog){
+      throw new Error()
+    }
 
     const post = this.PostModel.createInstance({
       title: dto.title,
       shortDescription: dto.shortDescription,
       content: dto.content,
-      blogId: dto.blogId,
+      blogId: blogId,
       blogName: blog.name
     })
 
-    return this.postsRepository.createPost(post);
+    const result = await this.postsRepository.createPost(post)
+
+    return result;
   }
 
 
