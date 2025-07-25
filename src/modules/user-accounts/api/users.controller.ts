@@ -37,6 +37,7 @@ export class UsersController {
   }
 
   @Get()
+  @HttpCode(HttpStatus.OK)
   async getAll(
     @Query() query: GetUsersQueryParams,
   ): Promise<PaginatedViewDto<UserViewDto[]>> {
@@ -44,6 +45,7 @@ export class UsersController {
   }
 
   @Post()
+  @HttpCode(HttpStatus.CREATED)
   async createUser(@Body() body: CreateUserInputDto): Promise<UserViewDto> {
     const userId = await this.usersService.createUser(body);
 
@@ -51,6 +53,7 @@ export class UsersController {
   }
 
   @Put(':id')
+  @HttpCode(HttpStatus.OK)
   async updateUser(
     @Param('id') id: string,
     @Body() body: UpdateUserInputDto,

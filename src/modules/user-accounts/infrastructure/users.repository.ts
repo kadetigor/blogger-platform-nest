@@ -1,6 +1,7 @@
 import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument, UserModelType } from '../domain/user.entity';
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { isValidObjectId } from 'mongoose';
  
 @Injectable()
 export class UsersRepository {
@@ -8,6 +9,11 @@ export class UsersRepository {
   constructor(@InjectModel(User.name) private UserModel: UserModelType) {}
  
   async findById(id: string): Promise<UserDocument | null> {
+    // Validate ObjectId format before querying
+    if (!isValidObjectId(id)) {
+      return null;
+    }
+    
     return this.UserModel.findOne({
       _id: id,
       deletedAt: null,
@@ -29,4 +35,3 @@ export class UsersRepository {
     return user;
   }
 }
- 

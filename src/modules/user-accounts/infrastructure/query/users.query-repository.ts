@@ -2,8 +2,7 @@ import { User, UserModelType } from '../../domain/user.entity';
 import { InjectModel } from '@nestjs/mongoose';
 import { UserViewDto } from '../../api/view-dto/users.view-dto';
 import { Injectable, NotFoundException } from '@nestjs/common';
-
-import { FilterQuery } from 'mongoose';
+import { FilterQuery, isValidObjectId } from 'mongoose';
 import { PaginatedViewDto } from '../../../../core/dto/base.paginated.view-dto';
 import { GetUsersQueryParams } from '../../api/input-dto/get-users-query-params.input-dto';
 
@@ -15,6 +14,11 @@ export class UsersQueryRepository {
   ) {}
 
   async getByIdOrNotFoundFail(id: string): Promise<UserViewDto> {
+    // Validate ObjectId format before querying
+    if (!isValidObjectId(id)) {
+      throw new NotFoundException('user not found');
+    }
+    
     const user = await this.UserModel.findOne({
       _id: id,
       deletedAt: null,
