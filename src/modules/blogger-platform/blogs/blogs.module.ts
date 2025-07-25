@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { forwardRef, Module } from "@nestjs/common";
 import { BlogsRepository } from "./infrastructure/blogs.repository";
 import { BlogsService } from "./application/blogs.service";
 import { BlogsQueryRepository } from "./infrastructure/query/blogs.query-repository";
@@ -11,7 +11,7 @@ import { PostsModule } from "../posts/posts.module";
 @Module({
     imports: [
         MongooseModule.forFeature([{ name: Blog.name, schema: BlogSchema }]),
-        PostsModule,
+        forwardRef(() => PostsModule),
     ],
     controllers: [BlogsController],
     providers: [
