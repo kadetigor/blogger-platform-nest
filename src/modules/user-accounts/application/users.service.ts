@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { User, UserModelType } from '../domain/user.entity';
 import { CreateUserDto } from '../dto/create-user.dto';
 import bcrypt from 'bcrypt';
 import { UsersRepository } from '../infrastructure/users.repository';
 import { UpdateUserDto } from '../dto/create-user.dto';
+import { isValidObjectId } from 'mongoose';
  
 @Injectable()
 export class UsersService {
@@ -40,11 +41,25 @@ export class UsersService {
     return user._id.toString();
   }
  
-  async deleteUser(id: string) {
-    const user = await this.usersRepository.findOrNotFoundFail(id);
- 
+  async deleteUser(id: string): Promise<void> {
+    // First validate the ObjectId format
+    if (!isValidObjectId(id)) {
+      throw new NotFoundException('user not found');
+    }
+    
+    // Use findById instead of findOrNotFoundFail to handle both cases
+    const user = await this.usersRepository.findById(id);
+    
+    if (!user) {
+      throw new NotFoundException('user not found');
+    }
+    
+    // If already deleted, just return successfully (idempotent operation)
+    if (user.deletedAt !== null) {
+      return;
+    }
+    
     user.makeDeleted();
- 
     await this.usersRepository.save(user);
   }
 }
