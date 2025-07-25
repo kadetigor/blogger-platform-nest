@@ -6,13 +6,9 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(
     new ValidationPipe({
-      //class-transformer создает экземпляр dto
-      //соответственно применятся значения по-умолчанию
-      //сработает наследование
-      //и методы классов dto
       transform: true,
     }),
   );
-  await app.listen(process.env.PORT ?? 3003);
+  await app.listen(process.env.PORT ?? 3004);
 }
 bootstrap();

@@ -9,10 +9,6 @@ export class UsersRepository {
   constructor(@InjectModel(User.name) private UserModel: UserModelType) {}
  
   async findById(id: string): Promise<UserDocument | null> {
-    // Validate ObjectId format before querying
-    if (!isValidObjectId(id)) {
-      return null;
-    }
     
     return this.UserModel.findOne({
       _id: id,
