@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, Query } from "@nestjs/common";
 import { BlogsQueryRepository } from "../infrastructure/query/blogs.query-repository";
 import { ApiParam } from "@nestjs/swagger";
 import { BlogViewDto } from "./view-dto/blogs.view-dto";
@@ -46,13 +46,14 @@ export class BlogsController {
     }
 
     @Put(':id')
-    //@HttpCode(204)
+    @HttpCode(HttpStatus.NO_CONTENT)
     async updateBlog(@Param('id') id: string, @Body() body: UpdateBlogInputDto): Promise<BlogViewDto> {
         const blogId = await this.blogsService.updateBlog(id, body)
         return this.blogsQueryRepository.getByIdOrNotFoundFail(blogId.id);
     }
 
     @Delete(':id')
+    @HttpCode(HttpStatus.NO_CONTENT)
     async deleteBlog(@Param('id') id: string): Promise<void> {
         await this.blogsService.deleteBlog(id)
     }
@@ -62,6 +63,7 @@ export class BlogsController {
         @Param('id') blogId: string,
         @Query() query: GetPostsQueryParams,
     ): Promise<PaginatedViewDto<PostViewDto[]>> {
+        await this.blogsQueryRepository.getByIdOrNotFoundFail(blogId);
         const result = await this.postsExternalQueryRepository.getAllPostsByBlog(query, blogId)
         return result
     }

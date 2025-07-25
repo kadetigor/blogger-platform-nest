@@ -32,21 +32,21 @@ export class BlogsQueryRepository {
         query: GetBlogsQueryParams,
       ): Promise<PaginatedViewDto<BlogViewDto[]>> {
         const filter: FilterQuery<Blog> = {
-          deletedAt: null,
+            deletedAt: null,
         };
-    
+
         if (query.searchNameTerm) {
-          filter.$or = filter.$or || [];
-          filter.$or.push({
-            login: { $regex: query.searchNameTerm, $options: 'i' },
-          });
+            filter.$or = filter.$or || [];
+            filter.$or.push({
+                name: { $regex: query.searchNameTerm, $options: 'i' },
+            });
         }
-    
+
         if (query.searchDescriptionTerm) {
-          filter.$or = filter.$or || [];
-          filter.$or.push({
-            email: { $regex: query.searchDescriptionTerm, $options: 'i' },
-          });
+            filter.$or = filter.$or || [];
+            filter.$or.push({
+                description: { $regex: query.searchDescriptionTerm, $options: 'i' },
+            });
         }
     
         const blog = await this.BlogModel.find(filter)

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Put, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Put, Query, HttpStatus, HttpCode } from '@nestjs/common';
 import { PostsService } from '../application/posts.service';
 import { CreatePostDto } from '../dto/create-post.dto';
 import { PostsQueryRepository } from '../infrastructure/query/posts.query-repository';
@@ -17,7 +17,6 @@ export class PostsController {
     console.log('PostsController created')
   }
 
-  @ApiParam({ name: 'id' })
 
   @Get()
   async findAll(
@@ -37,11 +36,13 @@ export class PostsController {
   }
 
   @Put(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
   async update(@Param('id') id: string, @Body() dto: CreatePostInputDto): Promise<void> {
     return this.postsService.updatePost(id, dto);
   }
 
   @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id') id: string): Promise<void> {
     return this.postsService.removePost(id);
   }
