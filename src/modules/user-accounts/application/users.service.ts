@@ -56,7 +56,7 @@ export class UsersService {
     
     // If already deleted, just return successfully (idempotent operation)
     if (user.deletedAt !== null) {
-      throw new NotFoundException('user not found');
+      return;
     }
     
     user.makeDeleted();
