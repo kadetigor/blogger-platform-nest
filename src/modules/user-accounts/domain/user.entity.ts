@@ -43,6 +43,8 @@ export class User {
       firstName: 'firstName xxx',
       lastName: 'lastName yyy',
     };
+
+    user.deletedAt = null;
  
     return user as UserDocument;
   }
