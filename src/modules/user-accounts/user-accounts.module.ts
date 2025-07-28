@@ -11,10 +11,15 @@ import { AuthQueryRepository } from './infrastructure/query/auth.query-repositor
 import { SecurityDevicesController } from './api/security-devices.controller';
 import { UsersExternalQueryRepository } from './infrastructure/external-query/users.external-query-repository';
 import { UsersExternalService } from './application/users.external-service';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { AuthService } from './application/auth.service';
+import { JwtService } from '@nestjs/jwt';
+import { CryptoService } from './application/crypto.service';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    NotificationsModule,
   ],
   controllers: [UsersController, AuthController, SecurityDevicesController],
   providers: [
@@ -23,6 +28,9 @@ import { UsersExternalService } from './application/users.external-service';
     UsersQueryRepository,
     SecurityDevicesQueryRepository,
     AuthQueryRepository,
+    AuthService,
+    JwtService,
+    CryptoService,
     UsersExternalQueryRepository,
     UsersExternalService,
   ],

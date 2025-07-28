@@ -30,4 +30,12 @@ export class UsersRepository {
  
     return user;
   }
+
+  findByLogin(login: string): Promise<UserDocument | null> {
+    return this.UserModel.findOne({ login });
+  }
+
+  async loginIsExist(login: string): Promise<boolean> {
+    return !!(await this.UserModel.countDocuments({ login: login }));
+  }
 }

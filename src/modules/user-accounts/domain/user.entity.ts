@@ -56,6 +56,10 @@ export class User {
     }
     this.deletedAt = new Date();
   }
+
+  setConfirmationCode(code: string) {
+    // TODO: logic
+  }
  
 
   update(dto: UpdateUserDto) {
