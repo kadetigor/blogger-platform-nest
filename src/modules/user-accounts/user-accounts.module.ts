@@ -13,13 +13,19 @@ import { UsersExternalQueryRepository } from './infrastructure/external-query/us
 import { UsersExternalService } from './application/users.external-service';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { AuthService } from './application/auth.service';
-import { JwtService } from '@nestjs/jwt';
+import { JwtModule } from '@nestjs/jwt';
+import { JwtStrategy } from './guards/bearer/jwt.startegy';
 import { CryptoService } from './application/crypto.service';
+
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     NotificationsModule,
+    JwtModule.register({
+      secret: process.env.AC_SECRET || 'access-token-secret',
+      signOptions: { expiresIn: `${process.env.AC_TIME}s` },
+    }),
   ],
   controllers: [UsersController, AuthController, SecurityDevicesController],
   providers: [
@@ -29,11 +35,11 @@ import { CryptoService } from './application/crypto.service';
     SecurityDevicesQueryRepository,
     AuthQueryRepository,
     AuthService,
-    JwtService,
+    JwtStrategy,
     CryptoService,
     UsersExternalQueryRepository,
     UsersExternalService,
   ],
-  exports: [UsersExternalQueryRepository, UsersExternalService],
+  exports: [UsersExternalQueryRepository, UsersExternalService, JwtModule],
 })
 export class UserAccountsModule {}
