@@ -1,13 +1,13 @@
 export class CreateUserDomainDto {
-    login: string;
-    password: string;
-    email: string;
+  login: string;
+  passwordHash: string;
+  email: string;
 }
 
 export class CreateUserDto {
-    login: string;
-    password: string;
-    email: string;
+  login: string;
+  password: string;
+  email: string;
 }
 
 // TODO: decise what to keep and what to delete

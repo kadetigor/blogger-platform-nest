@@ -9,6 +9,8 @@ import {
   Post,
   Put,
   Query,
+  UseGuards,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { UsersQueryRepository } from '../infrastructure/query/users.query-repository';
 import { UserViewDto } from './view-dto/users.view-dto';
@@ -18,21 +20,18 @@ import { PaginatedViewDto } from '../../../core/dto/base.paginated.view-dto';
 import { ApiParam } from '@nestjs/swagger';
 import { UpdateUserInputDto } from './input-dto/update-user.input-dto';
 import { GetUsersQueryParams } from './input-dto/get-users-query-params.input-dto';
+import { BasicAuthGuard } from '../guards/basic/basic.auth-guard';
 
 @Controller('users')
 export class UsersController {
   constructor(
     private usersQueryRepository: UsersQueryRepository,
     private usersService: UsersService,
-  ) {
-    console.log('UsersController created');
-  }
+  ) {}
 
-  @ApiParam({ name: 'id' }) //для сваггера
-  @Get(':id') //users/232342-sdfssdf-23234323
+  @ApiParam({ name: 'id' })
+  @Get(':id')
   async getById(@Param('id') id: string): Promise<UserViewDto> {
-    // можем и чаще так и делаем возвращать Promise из action. Сам NestJS будет дожидаться, когда
-    // промис зарезолвится и затем NestJS вернёт результат клиенту
     return this.usersQueryRepository.getByIdOrNotFoundFail(id);
   }
 
@@ -45,10 +44,10 @@ export class UsersController {
   }
 
   @Post()
+  @UseGuards(BasicAuthGuard)
   @HttpCode(HttpStatus.CREATED)
   async createUser(@Body() body: CreateUserInputDto): Promise<UserViewDto> {
     const userId = await this.usersService.createUser(body);
-
     return this.usersQueryRepository.getByIdOrNotFoundFail(userId);
   }
 
@@ -59,12 +58,11 @@ export class UsersController {
     @Body() body: UpdateUserInputDto,
   ): Promise<UserViewDto> {
     const userId = await this.usersService.updateUser(id, body);
-
     return this.usersQueryRepository.getByIdOrNotFoundFail(userId);
   }
 
-  // @ApiParam({ name: 'id' }) //для сваггера
   @Delete(':id')
+  @UseGuards(BasicAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteUser(@Param('id') id: string): Promise<void> {
     return this.usersService.deleteUser(id);

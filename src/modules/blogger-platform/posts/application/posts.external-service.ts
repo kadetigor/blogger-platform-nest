@@ -9,7 +9,6 @@ import { PostViewDto } from '../api/view-dto/post.view-dto';
 
 @Injectable()
 export class PostsExternalService {
-
   constructor(
     @InjectModel(Post.name)
     private PostModel: PostModelType,
@@ -17,13 +16,16 @@ export class PostsExternalService {
     private blogsExternalQueryRepository: BlogsExternalQueryRepository,
   ) {}
 
-  async createPostForBlog(blogId: string, dto: CreatePostDto): Promise<PostViewDto> {
-
+  async createPostForBlog(
+    blogId: string,
+    dto: CreatePostDto,
+  ): Promise<PostViewDto> {
     // Fetch the blog to get its name
-    const blog = await this.blogsExternalQueryRepository.getByIdOrNotFoundFail(blogId);
+    const blog =
+      await this.blogsExternalQueryRepository.getByIdOrNotFoundFail(blogId);
 
-    if(!blog){
-      throw new Error()
+    if (!blog) {
+      throw new Error();
     }
 
     const post = this.PostModel.createInstance({
@@ -31,17 +33,15 @@ export class PostsExternalService {
       shortDescription: dto.shortDescription,
       content: dto.content,
       blogId: blogId,
-      blogName: blog.name
-    })
+      blogName: blog.name,
+    });
 
-    const result = await this.postsRepository.createPost(post)
+    const result = await this.postsRepository.createPost(post);
 
     return result;
   }
 
-
   async updatePost(id: string, dto: CreatePostInputDto): Promise<void> {
-
     const result = await this.postsRepository.updatePost(id, dto);
     return result;
   }

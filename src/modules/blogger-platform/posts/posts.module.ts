@@ -11,16 +11,16 @@ import { PostsExternalService } from './application/posts.external-service';
 
 @Module({
   imports: [
-          MongooseModule.forFeature([{ name: Post.name, schema: PostSchema }]),
-          forwardRef(() => BlogsModule),
-      ],
+    MongooseModule.forFeature([{ name: Post.name, schema: PostSchema }]),
+    forwardRef(() => BlogsModule),
+  ],
   controllers: [PostsController],
   providers: [
     PostsService,
     PostsRepository,
     PostsQueryRepository,
     PostsExternalQueryRepository,
-    PostsExternalService
+    PostsExternalService,
   ],
   exports: [PostsExternalQueryRepository, PostsExternalService],
 })

@@ -1,5 +1,5 @@
-import { CreatePostDto } from "../../dto/create-post.dto";
+import { CreatePostDto } from '../../dto/create-post.dto';
 
 export class CreatePostInputDto extends CreatePostDto {
-    blogId: string;
+  blogId: string;
 }

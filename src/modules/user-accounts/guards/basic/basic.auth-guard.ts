@@ -1,51 +1,37 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
-import { Request } from 'express';
-import { DomainException } from '../../../../core/exceptions/domain-exceptions';
-import { Reflector } from '@nestjs/core';
-import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
-import { DomainExceptionCode } from '../../../../core/exceptions/domain-exception-codes';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { Observable } from 'rxjs';
 
 @Injectable()
 export class BasicAuthGuard implements CanActivate {
-  private readonly validUsername = 'admin';
-  private readonly validPassword = 'qwerty';
+  canActivate(
+    context: ExecutionContext,
+  ): boolean | Promise<boolean> | Observable<boolean> {
+    const request = context.switchToHttp().getRequest();
+    const auth = request.headers.authorization;
 
-  constructor(private reflector: Reflector) {}
+    if (!auth) {
+      throw new UnauthorizedException();
+    }
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<Request>();
-    const authHeader = request.headers.authorization;
+    const [type, credentials] = auth.split(' ');
 
-    //https://docs.nestjs.com/security/authentication#enable-authentication-globally
-    // reflection
-    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-    if (isPublic) {
+    if (type !== 'Basic') {
+      throw new UnauthorizedException();
+    }
+
+    const decoded = Buffer.from(credentials, 'base64').toString('utf-8');
+    const [username, password] = decoded.split(':');
+
+    // You should check these against your actual admin credentials
+    if (username === 'admin' && password === 'qwerty') {
       return true;
     }
 
-    if (!authHeader || !authHeader.startsWith('Basic ')) {
-      throw new DomainException({
-        code: DomainExceptionCode.Unauthorized,
-        message: 'unauthorised',
-      });
-    }
-
-    const base64Credentials = authHeader.split(' ')[1];
-    const credentials = Buffer.from(base64Credentials, 'base64').toString(
-      'utf-8',
-    );
-    const [username, password] = credentials.split(':');
-
-    if (username === this.validUsername && password === this.validPassword) {
-      return true;
-    } else {
-      throw new DomainException({
-        code: DomainExceptionCode.Unauthorized,
-        message: 'unauthorised',
-      });
-    }
+    throw new UnauthorizedException();
   }
 }

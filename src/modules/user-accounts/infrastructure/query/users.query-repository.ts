@@ -18,7 +18,7 @@ export class UsersQueryRepository {
     if (!isValidObjectId(id)) {
       throw new NotFoundException('user not found');
     }
-    
+
     const user = await this.UserModel.findOne({
       _id: id,
       deletedAt: null,

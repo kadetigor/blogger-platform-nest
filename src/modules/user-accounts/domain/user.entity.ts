@@ -1,54 +1,48 @@
-import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { HydratedDocument, Model } from "mongoose";
-import { CreateUserDomainDto } from "../dto/create-user.dto";
-import { UpdateUserDto } from "../dto/create-user.dto";
-import { Name, NameSchema } from "./name.schema";
-
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { HydratedDocument, Model } from 'mongoose';
+import { CreateUserDomainDto } from '../dto/create-user.dto';
+import { UpdateUserDto } from '../dto/create-user.dto';
+import { Name, NameSchema } from './name.schema';
 
 @Schema({ timestamps: true })
 export class User {
-
   @Prop({ type: String, required: true })
   login: string;
- 
 
   @Prop({ type: String, required: true })
   passwordHash: string;
- 
 
   @Prop({ type: String, required: true })
   email: string;
 
   @Prop({ type: Boolean, required: true, default: false })
   isEmailConfirmed: boolean;
- 
-//   // @Prop(NameSchema) this variant from doc. doesn't make validation for inner object
+
+  //   // @Prop(NameSchema) this variant from doc. doesn't make validation for inner object
   @Prop({ type: NameSchema })
   name: Name;
   createdAt: Date;
   updatedAt: Date;
- 
 
   @Prop({ type: Date, nullable: true })
   deletedAt: Date | null;
- 
+
   static createInstance(dto: CreateUserDomainDto): UserDocument {
     const user = new this();
     user.email = dto.email;
-    user.passwordHash = dto.password; // TODO: change to passwordHash in the future 
+    user.passwordHash = dto.passwordHash; // TODO: change to passwordHash in the future
     user.login = dto.login;
     user.isEmailConfirmed = false; // пользователь ВСЕГДА должен после регистрации подтверждить свой Email
- 
+
     user.name = {
       firstName: 'firstName xxx',
       lastName: 'lastName yyy',
     };
 
     user.deletedAt = null;
- 
+
     return user as UserDocument;
   }
- 
 
   makeDeleted() {
     if (this.deletedAt !== null) {
@@ -60,7 +54,6 @@ export class User {
   setConfirmationCode(code: string) {
     // TODO: logic
   }
- 
 
   update(dto: UpdateUserDto) {
     if (dto.email !== this.email) {
@@ -69,15 +62,14 @@ export class User {
     this.email = dto.email;
   }
 }
- 
+
 export const UserSchema = SchemaFactory.createForClass(User);
- 
+
 //регистрирует методы сущности в схеме
 UserSchema.loadClass(User);
- 
+
 //Типизация документа
 export type UserDocument = HydratedDocument<User>;
- 
+
 //Типизация модели + статические методы
 export type UserModelType = Model<UserDocument> & typeof User;
- 

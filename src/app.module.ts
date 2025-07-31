@@ -9,7 +9,9 @@ import { BloggersPlatformModule } from './modules/blogger-platform/blogger-platf
 
 @Module({
   imports: [
-    MongooseModule.forRoot('mongodb+srv://kadetigor3216:yxqFwxLKJaQKAlqG@mycluster.o5wevkr.mongodb.net/'),
+    MongooseModule.forRoot(
+      'mongodb+srv://kadetigor3216:yxqFwxLKJaQKAlqG@mycluster.o5wevkr.mongodb.net/',
+    ),
     UserAccountsModule,
     TestingModule,
     BloggersPlatformModule,
@@ -18,5 +20,4 @@ import { BloggersPlatformModule } from './modules/blogger-platform/blogger-platf
   controllers: [AppController],
   providers: [AppService],
 })
-
 export class AppModule {}

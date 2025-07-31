@@ -1,4 +1,4 @@
-import { UpdateBlogDto } from "../../dto/create-blog.dto";
+import { UpdateBlogDto } from '../../dto/create-blog.dto';
 
 export class UpdateBlogInputDto implements UpdateBlogDto {
   name: string;
