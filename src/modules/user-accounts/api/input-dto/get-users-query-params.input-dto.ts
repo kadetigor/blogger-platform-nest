@@ -1,9 +1,17 @@
+import { IsOptional, IsString, IsEnum } from 'class-validator';
 import { UsersSortBy } from './users-sort-by';
 import { BaseQueryParams } from 'src/core/dto/base.query-params.input-dto';
 
-//dto для запроса списка юзеров с пагинацией, сортировкой, фильтрами
 export class GetUsersQueryParams extends BaseQueryParams {
-  sortBy = UsersSortBy.CreatedAt;
+  @IsOptional()
+  @IsEnum(UsersSortBy)
+  sortBy: UsersSortBy = UsersSortBy.CreatedAt;
+
+  @IsOptional()
+  @IsString()
   searchLoginTerm: string | null = null;
+
+  @IsOptional()
+  @IsString()
   searchEmailTerm: string | null = null;
 }
