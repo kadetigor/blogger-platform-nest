@@ -1,10 +1,9 @@
 import nodemailer from 'nodemailer';
 
-
 export class EmailAdapter {
     async sendEmail(email: string, subject: string, message: string) {
         // If no API key is configured, just log and return success
-        if (process.env.SENDGRID_API_KEY) {
+        if (!process.env.SENDGRID_API_KEY) {  // Changed from if to if NOT
             console.log('No SendGrid API key configured, skipping email send');
             console.log(`Would send email to: ${email}, subject: ${subject}`);
             return { messageId: 'no-api-key-configured' };

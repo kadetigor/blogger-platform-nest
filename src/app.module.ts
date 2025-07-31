@@ -6,11 +6,16 @@ import { UserAccountsModule } from './modules/user-accounts/user-accounts.module
 import { CoreModule } from './core/core.module';
 import { TestingModule } from './modules/testing/testing.module';
 import { BloggersPlatformModule } from './modules/blogger-platform/blogger-platform.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true, // Makes the ConfigModule available throughout the app
+      envFilePath: '.env', // Specify the path to your .env file
+    }),
     MongooseModule.forRoot(
-      'mongodb+srv://kadetigor3216:yxqFwxLKJaQKAlqG@mycluster.o5wevkr.mongodb.net/',
+      process.env.MONGO_URL || 'mongodb+srv://kadetigor3216:yxqFwxLKJaQKAlqG@mycluster.o5wevkr.mongodb.net/',
     ),
     UserAccountsModule,
     TestingModule,
