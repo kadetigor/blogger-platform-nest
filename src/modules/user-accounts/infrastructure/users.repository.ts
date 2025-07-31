@@ -1,65 +1,75 @@
+// src/modules/user-accounts/infrastructure/users.repository.ts
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument, UserModelType } from '../domain/user.entity';
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { isValidObjectId } from 'mongoose';
+import { Types } from 'mongoose';
+import { CreateUserDomainDto } from '../dto/create-user.dto';
 
 @Injectable()
 export class UsersRepository {
-  //инжектирование модели через DI
-  constructor(@InjectModel(User.name) private UserModel: UserModelType) {}
+  constructor(
+    @InjectModel(User.name)
+    private UserModel: UserModelType,
+  ) {}
 
-  async findById(id: string): Promise<UserDocument | null> {
-    return this.UserModel.findOne({
-      _id: id,
-      deletedAt: null,
-    });
+  async save(user: UserDocument): Promise<UserDocument> {
+    return await user.save();
   }
 
-  async save(user: UserDocument) {
-    await user.save();
+  async findById(id: string): Promise<UserDocument | null> {
+    if (!Types.ObjectId.isValid(id)) {
+      return null;
+    }
+    return await this.UserModel.findOne({ _id: id, deletedAt: null }).exec();
   }
 
   async findOrNotFoundFail(id: string): Promise<UserDocument> {
     const user = await this.findById(id);
-
     if (!user) {
-      //TODO: replace with domain exception
-      throw new NotFoundException('user not found');
+      throw new Error('User not found');
     }
-
     return user;
   }
 
-  findByLogin(login: string): Promise<UserDocument | null> {
-    return this.UserModel.findOne({ login });
-  }
-
-  async loginIsExist(login: string): Promise<boolean> {
-    return !!(await this.UserModel.countDocuments({ login: login }));
-  }
-
-  async findByLoginOrEmail(loginOrEmail: string): Promise<UserDocument | null> {
-    return this.UserModel.findOne({
-      $or: [{ login: loginOrEmail }, { email: loginOrEmail }],
-      deletedAt: null,
-    });
+  async findByLogin(login: string): Promise<UserDocument | null> {
+    return await this.UserModel.findOne({ login, deletedAt: null }).exec();
   }
 
   async findByEmail(email: string): Promise<UserDocument | null> {
-    return this.UserModel.findOne({ email, deletedAt: null });
+    return await this.UserModel.findOne({ email, deletedAt: null }).exec();
   }
 
-  async create(userData: {
-    login: string;
-    email: string;
-    passwordHash: string;
-  }): Promise<string> {
-    const user = this.UserModel.createInstance(userData);
-    await user.save();
-    return user._id.toString();
+  async findByLoginOrEmail(loginOrEmail: string): Promise<UserDocument | null> {
+    return await this.UserModel.findOne({
+      $or: [
+        { login: loginOrEmail },
+        { email: loginOrEmail }
+      ],
+      deletedAt: null
+    }).exec();
   }
 
-  async confirmEmail(userId: string): Promise<void> {
-    await this.UserModel.updateOne({ _id: userId }, { isEmailConfirmed: true });
+  async findByConfirmationCode(code: string): Promise<UserDocument | null> {
+    return await this.UserModel.findOne({ 
+      confirmationCode: code,
+      deletedAt: null 
+    }).exec();
+  }
+
+  async createUser(dto: CreateUserDomainDto): Promise<UserDocument> {
+    const user = this.UserModel.createInstance(dto);
+    return await this.save(user);
+  }
+
+  async findAll(skip: number = 0, limit: number = 10): Promise<UserDocument[]> {
+    return await this.UserModel
+      .find({ deletedAt: null })
+      .skip(skip)
+      .limit(limit)
+      .exec();
+  }
+
+  async count(): Promise<number> {
+    return await this.UserModel.countDocuments({ deletedAt: null }).exec();
   }
 }

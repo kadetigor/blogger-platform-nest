@@ -1,21 +1,34 @@
+// src/modules/user-accounts/application/auth.service.ts
 import { Injectable } from '@nestjs/common';
-import { UsersRepository } from '../infrastructure/users.repository';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
+import { UsersRepository } from '../infrastructure/users.repository';
+import { UsersService } from './users.service';
 import { EmailService } from '../../notifications/email.service';
-import { v4 as uuidv4 } from 'uuid';
+import * as bcrypt from 'bcrypt';
+import { randomUUID } from 'crypto';
+import { CreateUserDto } from '../dto/create-user.dto';
+
+export interface AuthResult {
+  success: boolean;
+  accessToken?: string;
+  errors?: Array<{ field: string; message: string }>;
+}
+
+export interface OperationResult {
+  success: boolean;
+  errors?: Array<{ field: string; message: string }>;
+}
 
 @Injectable()
 export class AuthService {
-  private confirmationCodes = new Map<string, { email: string; userId: string; confirmed: boolean }>();
-
   constructor(
     private usersRepository: UsersRepository,
+    private usersService: UsersService,
     private jwtService: JwtService,
     private emailService: EmailService,
   ) {}
 
-  async validateUser(loginOrEmail: string, password: string) {
+  async validateUser(loginOrEmail: string, password: string): Promise<any> {
     const user = await this.usersRepository.findByLoginOrEmail(loginOrEmail);
     
     if (!user) {
@@ -29,103 +42,110 @@ export class AuthService {
     }
 
     return {
-      id: user._id.toString(),
+      userId: user._id.toString(),
+      login: user.login,
+      email: user.email,
     };
   }
 
-  async login(loginOrEmail: string, password: string) {
-    const user = await this.usersRepository.findByLoginOrEmail(loginOrEmail);
+  async login(loginOrEmail: string, password: string): Promise<AuthResult> {
+    const user = await this.validateUser(loginOrEmail, password);
     
     if (!user) {
-      return null;
+      return { success: false };
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
-    
-    if (!isPasswordValid) {
-      return null;
-    }
-
-    const accessToken = this.jwtService.sign({
-      userId: user._id.toString(),
+    const payload = { 
+      userId: user.userId, 
       login: user.login,
-    });
-
-    return { accessToken };
+      email: user.email 
+    };
+    
+    return {
+      success: true,
+      accessToken: this.jwtService.sign(payload),
+    };
   }
 
-  async registerUser(dto: {
-    login: string;
-    password: string;
-    email: string;
-  }) {
-    // Check if user already exists
-    const existingUserByEmail = await this.usersRepository.findByEmail(dto.email);
+  async registerUser(dto: CreateUserDto): Promise<OperationResult> {
+    // Check if user with same login exists
     const existingUserByLogin = await this.usersRepository.findByLogin(dto.login);
-
-    const errors: { field: string; message: string }[] = [];
-    
-    if (existingUserByEmail) {
-      errors.push({ field: 'email', message: 'Email already exists' });
-    }
-    
     if (existingUserByLogin) {
-      errors.push({ field: 'login', message: 'Login already exists' });
+      return {
+        success: false,
+        errors: [{ field: 'login', message: 'Login already exists' }],
+      };
     }
 
-    if (errors.length > 0) {
-      return { success: false, errors };
+    // Check if user with same email exists
+    const existingUserByEmail = await this.usersRepository.findByEmail(dto.email);
+    if (existingUserByEmail) {
+      return {
+        success: false,
+        errors: [{ field: 'email', message: 'Email already exists' }],
+      };
     }
 
-    // Create user
-    const passwordHash = await bcrypt.hash(dto.password, 10);
-    const userId = await this.usersRepository.create({
-      login: dto.login,
-      email: dto.email,
-      passwordHash,
-    });
+    try {
+      // Create user
+      const passwordHash = await bcrypt.hash(dto.password, 10);
+      const user = await this.usersRepository.createUser({
+        email: dto.email,
+        login: dto.login,
+        passwordHash,
+      });
 
-    // Generate confirmation code
-    const confirmationCode = uuidv4();
-    this.confirmationCodes.set(confirmationCode, {
-      email: dto.email,
-      userId,
-      confirmed: false,
-    });
+      // Generate and save confirmation code
+      const confirmationCode = randomUUID();
+      user.setConfirmationCode(confirmationCode);
+      await this.usersRepository.save(user);
 
-    // Send email
-    await this.emailService.sendConfirmationEmail(dto.email, confirmationCode);
+      // Send confirmation email
+      await this.emailService.sendConfirmationEmail(user.email, confirmationCode);
 
-    return { success: true };
+      return { success: true };
+    } catch (error) {
+      console.error('Registration error:', error);
+      return {
+        success: false,
+        errors: [{ field: 'email', message: 'Registration failed' }],
+      };
+    }
   }
 
-  async confirmRegistration(code: string) {
-    const confirmationData = this.confirmationCodes.get(code);
-
-    if (!confirmationData) {
+  async confirmRegistration(code: string): Promise<OperationResult> {
+    const user = await this.usersRepository.findByConfirmationCode(code);
+    
+    if (!user) {
       return {
         success: false,
         errors: [{ field: 'code', message: 'Invalid confirmation code' }],
       };
     }
 
-    if (confirmationData.confirmed) {
+    if (user.isEmailConfirmed) {
       return {
         success: false,
-        errors: [{ field: 'code', message: 'Code already confirmed' }],
+        errors: [{ field: 'code', message: 'Email already confirmed' }],
       };
     }
 
-    // Mark as confirmed
-    confirmationData.confirmed = true;
-    await this.usersRepository.confirmEmail(confirmationData.userId);
+    const confirmed = user.confirmEmail(code);
+    
+    if (!confirmed) {
+      return {
+        success: false,
+        errors: [{ field: 'code', message: 'Confirmation code expired or invalid' }],
+      };
+    }
 
+    await this.usersRepository.save(user);
     return { success: true };
   }
 
-  async resendRegistrationEmail(email: string) {
+  async resendRegistrationEmail(email: string): Promise<OperationResult> {
     const user = await this.usersRepository.findByEmail(email);
-
+    
     if (!user) {
       return {
         success: false,
@@ -140,17 +160,22 @@ export class AuthService {
       };
     }
 
-    // Generate new confirmation code
-    const confirmationCode = uuidv4();
-    this.confirmationCodes.set(confirmationCode, {
-      email: email,
-      userId: user._id.toString(),
-      confirmed: false,
-    });
+    try {
+      // Generate new confirmation code
+      const confirmationCode = randomUUID();
+      user.setConfirmationCode(confirmationCode);
+      await this.usersRepository.save(user);
 
-    // Send email
-    await this.emailService.sendConfirmationEmail(email, confirmationCode);
+      // Send confirmation email
+      await this.emailService.sendConfirmationEmail(email, confirmationCode);
 
-    return { success: true };
+      return { success: true };
+    } catch (error) {
+      console.error('Resend email error:', error);
+      return {
+        success: false,
+        errors: [{ field: 'email', message: 'Failed to resend email' }],
+      };
+    }
   }
 }

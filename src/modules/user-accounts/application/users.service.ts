@@ -1,25 +1,37 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { User, UserModelType } from '../domain/user.entity';
 import { CreateUserDto } from '../dto/create-user.dto';
-import bcrypt from 'bcrypt';
+import * as bcrypt from 'bcrypt';
 import { UsersRepository } from '../infrastructure/users.repository';
 import { UpdateUserDto } from '../dto/create-user.dto';
-import { isValidObjectId, Types } from 'mongoose';
-import { EmailService } from 'src/modules/notifications/email.service';
+import { isValidObjectId } from 'mongoose';
 
 @Injectable()
 export class UsersService {
   constructor(
-    //инжектирование модели в сервис через DI
     @InjectModel(User.name)
     private UserModel: UserModelType,
     private usersRepository: UsersRepository,
-    private emailService: EmailService,
   ) {}
 
   async createUser(dto: CreateUserDto): Promise<string> {
-    //TODO: move to brypt service
+    // Check if user with same login exists
+    const existingUserByLogin = await this.usersRepository.findByLogin(dto.login);
+    if (existingUserByLogin) {
+      throw new BadRequestException({
+        errorsMessages: [{ field: 'login', message: 'Login already exists' }],
+      });
+    }
+
+    // Check if user with same email exists
+    const existingUserByEmail = await this.usersRepository.findByEmail(dto.email);
+    if (existingUserByEmail) {
+      throw new BadRequestException({
+        errorsMessages: [{ field: 'email', message: 'Email already exists' }],
+      });
+    }
+
     const passwordHash = await bcrypt.hash(dto.password, 10);
 
     const user = this.UserModel.createInstance({
@@ -63,20 +75,5 @@ export class UsersService {
 
     user.makeDeleted();
     await this.usersRepository.save(user);
-  }
-
-  async registerUser(dto: CreateUserDto) {
-    const createdUserId = await this.createUser(dto);
-
-    const confirmCode = 'uuid';
-
-    const user = await this.usersRepository.findOrNotFoundFail(createdUserId);
-
-    user.setConfirmationCode(confirmCode);
-    await this.usersRepository.save(user);
-
-    this.emailService
-      .sendConfirmationEmail(user.email, confirmCode)
-      .catch(console.error);
   }
 }

@@ -1,8 +1,10 @@
+// src/modules/user-accounts/domain/user.entity.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Model } from 'mongoose';
 import { CreateUserDomainDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/create-user.dto';
 import { Name, NameSchema } from './name.schema';
+import { randomUUID } from 'crypto';
 
 @Schema({ timestamps: true })
 export class User {
@@ -18,9 +20,15 @@ export class User {
   @Prop({ type: Boolean, required: true, default: false })
   isEmailConfirmed: boolean;
 
-  //   // @Prop(NameSchema) this variant from doc. doesn't make validation for inner object
+  @Prop({ type: String, nullable: true })
+  confirmationCode: string | null;
+
+  @Prop({ type: Date, nullable: true })
+  confirmationCodeExpiry: Date | null;
+
   @Prop({ type: NameSchema })
   name: Name;
+  
   createdAt: Date;
   updatedAt: Date;
 
@@ -30,9 +38,11 @@ export class User {
   static createInstance(dto: CreateUserDomainDto): UserDocument {
     const user = new this();
     user.email = dto.email;
-    user.passwordHash = dto.passwordHash; // TODO: change to passwordHash in the future
+    user.passwordHash = dto.passwordHash;
     user.login = dto.login;
-    user.isEmailConfirmed = false; // пользователь ВСЕГДА должен после регистрации подтверждить свой Email
+    user.isEmailConfirmed = false;
+    user.confirmationCode = null;
+    user.confirmationCodeExpiry = null;
 
     user.name = {
       firstName: 'firstName xxx',
@@ -52,7 +62,23 @@ export class User {
   }
 
   setConfirmationCode(code: string) {
-    // TODO: logic
+    this.confirmationCode = code;
+    this.confirmationCodeExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+  }
+
+  confirmEmail(code: string): boolean {
+    if (!this.confirmationCode || this.confirmationCode !== code) {
+      return false;
+    }
+
+    if (this.confirmationCodeExpiry && this.confirmationCodeExpiry < new Date()) {
+      return false;
+    }
+
+    this.isEmailConfirmed = true;
+    this.confirmationCode = null;
+    this.confirmationCodeExpiry = null;
+    return true;
   }
 
   update(dto: UpdateUserDto) {
@@ -65,11 +91,8 @@ export class User {
 
 export const UserSchema = SchemaFactory.createForClass(User);
 
-//регистрирует методы сущности в схеме
 UserSchema.loadClass(User);
 
-//Типизация документа
 export type UserDocument = HydratedDocument<User>;
 
-//Типизация модели + статические методы
 export type UserModelType = Model<UserDocument> & typeof User;

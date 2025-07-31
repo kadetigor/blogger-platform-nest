@@ -8,6 +8,7 @@ import {
   UseGuards,
   Request,
   BadRequestException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService } from '../application/auth.service';
 import {
@@ -30,12 +31,8 @@ export class AuthController {
       loginDto.password,
     );
 
-    if (!result) {
-      throw new BadRequestException({
-        errorsMessages: [
-          { field: 'loginOrEmail', message: 'Invalid credentials' },
-        ],
-      });
+    if (!result.success) {
+      throw new UnauthorizedException();
     }
 
     return { accessToken: result.accessToken };

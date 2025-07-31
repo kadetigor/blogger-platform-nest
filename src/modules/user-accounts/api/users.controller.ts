@@ -1,3 +1,4 @@
+// src/modules/user-accounts/api/users.controller.ts
 import {
   Body,
   Controller,
@@ -10,61 +11,55 @@ import {
   Put,
   Query,
   UseGuards,
-  UnauthorizedException,
 } from '@nestjs/common';
-import { UsersQueryRepository } from '../infrastructure/query/users.query-repository';
-import { UserViewDto } from './view-dto/users.view-dto';
 import { UsersService } from '../application/users.service';
-import { CreateUserInputDto } from './input-dto/users.input-dto';
-import { PaginatedViewDto } from '../../../core/dto/base.paginated.view-dto';
-import { ApiParam } from '@nestjs/swagger';
-import { UpdateUserInputDto } from './input-dto/update-user.input-dto';
-import { GetUsersQueryParams } from './input-dto/get-users-query-params.input-dto';
+import { CreateUserDto } from '../dto/create-user.dto';
+import { UpdateUserDto } from '../dto/create-user.dto';
+import { UsersQueryRepository } from '../infrastructure/query/users.query-repository';
 import { BasicAuthGuard } from '../guards/basic/basic.auth-guard';
+import { GetUsersQueryParams } from './input-dto/get-users-query-params.input-dto';
 
 @Controller('users')
 export class UsersController {
   constructor(
-    private usersQueryRepository: UsersQueryRepository,
-    private usersService: UsersService,
+    private readonly usersService: UsersService,
+    private readonly usersQueryRepository: UsersQueryRepository,
   ) {}
-
-  @ApiParam({ name: 'id' })
-  @Get(':id')
-  async getById(@Param('id') id: string): Promise<UserViewDto> {
-    return this.usersQueryRepository.getByIdOrNotFoundFail(id);
-  }
-
-  @Get()
-  @HttpCode(HttpStatus.OK)
-  async getAll(
-    @Query() query: GetUsersQueryParams,
-  ): Promise<PaginatedViewDto<UserViewDto[]>> {
-    return this.usersQueryRepository.getAll(query);
-  }
 
   @Post()
   @UseGuards(BasicAuthGuard)
   @HttpCode(HttpStatus.CREATED)
-  async createUser(@Body() body: CreateUserInputDto): Promise<UserViewDto> {
-    const userId = await this.usersService.createUser(body);
-    return this.usersQueryRepository.getByIdOrNotFoundFail(userId);
+  async create(@Body() createUserDto: CreateUserDto) {
+    const userId = await this.usersService.createUser(createUserDto);
+    const user = await this.usersQueryRepository.getByIdOrNotFoundFail(userId);
+    return user;
+  }
+
+  @Get()
+  @UseGuards(BasicAuthGuard)
+  async findAll(
+    @Query() query: GetUsersQueryParams,
+  ) {
+    return await this.usersQueryRepository.getAll(query);
+  }
+
+  @Get(':id')
+  @UseGuards(BasicAuthGuard)
+  async findOne(@Param('id') id: string) {
+    return await this.usersQueryRepository.getByIdOrNotFoundFail(id);
   }
 
   @Put(':id')
-  @HttpCode(HttpStatus.OK)
-  async updateUser(
-    @Param('id') id: string,
-    @Body() body: UpdateUserInputDto,
-  ): Promise<UserViewDto> {
-    const userId = await this.usersService.updateUser(id, body);
-    return this.usersQueryRepository.getByIdOrNotFoundFail(userId);
+  @UseGuards(BasicAuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+    await this.usersService.updateUser(id, updateUserDto);
   }
 
   @Delete(':id')
   @UseGuards(BasicAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteUser(@Param('id') id: string): Promise<void> {
-    return this.usersService.deleteUser(id);
+  async remove(@Param('id') id: string) {
+    await this.usersService.deleteUser(id);
   }
 }
