@@ -7,6 +7,7 @@ import { CoreModule } from './core/core.module';
 import { TestingModule } from './modules/testing/testing.module';
 import { BloggersPlatformModule } from './modules/blogger-platform/blogger-platform.module';
 import { ConfigModule } from '@nestjs/config';
+import { CqrsModule } from '@nestjs/cqrs';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { ConfigModule } from '@nestjs/config';
     MongooseModule.forRoot(
       process.env.MONGO_URL || 'mongodb+srv://kadetigor3216:yxqFwxLKJaQKAlqG@mycluster.o5wevkr.mongodb.net/',
     ),
+    CqrsModule.forRoot(),
     UserAccountsModule,
     TestingModule,
     BloggersPlatformModule,
