@@ -12,9 +12,7 @@ import {
   HttpCode,
 } from '@nestjs/common';
 import { PostsService } from '../application/posts.service';
-import { CreatePostDto } from '../dto/create-post.dto';
 import { PostsQueryRepository } from '../infrastructure/query/posts.query-repository';
-import { ApiParam } from '@nestjs/swagger';
 import { GetPostsQueryParams } from './input-dto/get-posts-query-params.input-dto';
 import { PaginatedViewDto } from 'src/core/dto/base.paginated.view-dto';
 import { PostViewDto } from './view-dto/post.view-dto';

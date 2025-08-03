@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { CommentatorInfo, CommentatorInfoSchema } from "./commentor-info.schema";
+import { CommentatorInfo, CommentatorInfoSchema } from "./schemas/commentor-info.schema";
 import { HydratedDocument, HydrateOptions, Model } from "mongoose";
 import { CreateCommentDto } from "../dto/create-comment.dto";
 
