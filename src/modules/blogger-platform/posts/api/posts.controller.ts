@@ -29,6 +29,8 @@ import { CreateCommentInputDto } from '../../comments/api/input-dto.ts/create-co
 import { JwtAuthGuard } from 'src/modules/user-accounts/guards/bearer/jwt.auth-guard';
 import { ValidationExceptionFilter } from 'src/core/filters/validation-exception.filter';
 import { GetCommentsQueryParams } from '../../comments/api/input-dto.ts/get-comments-query-params.input-dto';
+import { UpdateCommentDto } from '../../comments/dto/update-comment.dto';
+import { BasicAuthGuard } from 'src/modules/user-accounts/guards/basic/basic.auth-guard';
 
 @Controller('posts')
 export class PostsController {
@@ -39,6 +41,17 @@ export class PostsController {
     private commentsExternalService: CommentsExtertalService,
   ) {
     console.log('PostsController created');
+  }
+
+  @Put(':postId/comments')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(JwtAuthGuard)
+  async updateCommentForPost(
+    @Param('postId') postId: string,
+    @Req() req: RequestWithUser,
+    @Body() dto: UpdateCommentDto
+  ): Promise<void> {
+    return this.commentsExternalService.updateComment(postId, dto)
   }
 
   @Get(':postId/comments')
@@ -76,6 +89,7 @@ export class PostsController {
   }
 
   @Post()
+  @UseGuards(BasicAuthGuard)
   async create(@Body() dto: CreatePostInputDto): Promise < PostViewDto > {
     return this.postsService.createPost(dto);
   }
@@ -86,6 +100,7 @@ export class PostsController {
   }
 
   @Put(':id')
+  @UseGuards(BasicAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   async update(
     @Param('id') id: string,
@@ -95,6 +110,7 @@ export class PostsController {
   }
 
   @Delete(':id')
+  @UseGuards(BasicAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id') id: string): Promise < void> {
     return this.postsService.removePost(id);

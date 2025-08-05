@@ -5,6 +5,7 @@ import { CreateCommentInputDto } from "../api/input-dto.ts/create-comment.input-
 import { Comment, CommentModelType } from "../domain/comment.entity";
 import { InjectModel } from "@nestjs/mongoose";
 import { CommentViewDto } from "../api/view-dto.ts/comment.view-dto";
+import { UpdateCommentDto } from "../dto/update-comment.dto";
 
 @Injectable()
 export class CommentsExtertalService {
@@ -40,4 +41,9 @@ export class CommentsExtertalService {
 
     return commentViewModel;
   }
+
+  async updateComment(id: string, dto: UpdateCommentDto): Promise<void> {
+      await this.commentsRepository.updateComment(id, dto)
+      return;
+    }
 }
