@@ -11,10 +11,11 @@ import { PostsExternalService } from './application/posts.external-service';
 import { CommentsModule } from '../comments/comments.module';
 import { UserAccountsModule } from 'src/modules/user-accounts/user-accounts.module';
 import { PostLikeRepository } from './infrastructure/posts-likes.repository';
+import { PostLike, PostLikeSchema } from './domain/post-like.entity';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Post.name, schema: PostSchema }]),
+    MongooseModule.forFeature([{ name: Post.name, schema: PostSchema }, { name: PostLike.name, schema: PostLikeSchema }]),
     forwardRef(() => BlogsModule),
     CommentsModule,
     UserAccountsModule
