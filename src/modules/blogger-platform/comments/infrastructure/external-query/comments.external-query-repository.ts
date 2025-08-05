@@ -17,25 +17,29 @@ export class CommentsExternalQueryRepository {
 
   async getCommentsForPost(postId: string, userId: string, query: GetCommentsQueryParams): Promise<PaginatedViewDto<CommentViewDto[]>> {
     const filter: FilterQuery<Comment> = {
+          postId: postId,
           deletedAt: null,
         };
 
-    const comment = await this.CommentModel.find(filter)
+    const comments = await this.CommentModel.find(filter)
       .sort({ [query.sortBy]: query.sortDirection })
       .skip(query.calculateSkip())
       .limit(query.pageSize);
 
     const totalCount = await this.CommentModel.countDocuments(filter);
 
-    const items = comment.map(CommentViewDto.mapToView);
-
     const likesInfoMap = new Map<string, { likesCount: number; dislikesCount: number; myStatus: "None" | "Like" | "Dislike" }>();
         await Promise.all(
-          items.map(async (comment) => {
+          comments.map(async (comment) => {
             const likesInfo = await this.commentsLikesRepository.getLikesInfo(comment._id.toString(), userId);
             likesInfoMap.set(comment._id.toString(), likesInfo);
           })
         );
+
+    const items = comments.map(comment => {
+      const likesInfo = likesInfoMap.get(comment._id.toString());
+      return CommentViewDto.mapToView(comment, likesInfo!);
+    });
 
     return PaginatedViewDto.mapToView({
       items,
@@ -43,4 +47,5 @@ export class CommentsExternalQueryRepository {
       page: query.pageNumber,
       size: query.pageSize,
     });
+  }
 }

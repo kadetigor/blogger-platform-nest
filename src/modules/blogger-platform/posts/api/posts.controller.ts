@@ -46,7 +46,7 @@ export class PostsController {
     @Param('postId') postId: string,
     @Query() query: GetCommentsQueryParams,
     @Req() req: RequestWithUser,
-  ): Promise<PaginatedViewDto<PostViewDto[]>> {
+  ): Promise<PaginatedViewDto<CommentViewDto[]>> {
     const userId = req.user?.id as string;
 
     return this.commentsExternalQueryRepository.getCommentsForPost(postId, userId, query)
