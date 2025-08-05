@@ -9,6 +9,7 @@ import {
   Request,
   BadRequestException,
   UnauthorizedException,
+  Res,
 } from '@nestjs/common';
 import { AuthService } from '../application/auth.service';
 import {
@@ -18,6 +19,7 @@ import {
   RegistrationEmailResendingInputDto,
 } from './input-dto/auth.input-dto';
 import { JwtAuthGuard } from '../guards/bearer/jwt.auth-guard';
+import { Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
@@ -25,7 +27,10 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() loginDto: LoginInputDto) {
+  async login(
+    @Body() loginDto: LoginInputDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const result = await this.authService.login(
       loginDto.loginOrEmail,
       loginDto.password,
@@ -34,6 +39,13 @@ export class AuthController {
     if (!result.success) {
       throw new UnauthorizedException();
     }
+
+    res.cookie('refreshToken', result.refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000  // 7 days
+    });
 
     return { accessToken: result.accessToken };
   }

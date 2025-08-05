@@ -6,10 +6,11 @@ import { CommentsRepository } from "./infrastructure/comments.repository";
 import { CommentsService } from "./application/comments.service";
 import { CommentsExtertalService } from "./application/comments.external-service";
 import { PostsModule } from "../posts/posts.module";
-import { CommentsExternalQueryRepository } from "./infrastructure/external-query/comments.external-query-repository";
+import { CommentsExternalQueryRepository } from "./infrastructure/external/comments.external-query-repository";
 import { MongooseModule } from "@nestjs/mongoose";
 import { Comment, CommentSchema } from "./domain/comment.entity";
 import { CommentLike, CommentLikeSchema } from "./domain/comment-like.entity";
+import { CommentsLikesExternalRepository } from "./infrastructure/external/comments-likes.external-repository";
 
 @Module({
   imports: [
@@ -25,8 +26,9 @@ import { CommentLike, CommentLikeSchema } from "./domain/comment-like.entity";
     CommentsRepository,
     CommentsService,
     CommentsExternalQueryRepository,
-    CommentsExtertalService
+    CommentsExtertalService,
+    CommentsLikesExternalRepository
   ],
-  exports: [CommentsExtertalService, CommentsExternalQueryRepository]
+  exports: [CommentsExtertalService, CommentsExternalQueryRepository, CommentsLikesExternalRepository]
 })
 export class CommentsModule { }

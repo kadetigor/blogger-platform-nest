@@ -7,10 +7,13 @@ import { EmailService } from '../../notifications/email.service';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { CreateUserDto } from '../dto/create-user.dto';
+import { v4 as uuid } from 'uuid';
+import { ref } from 'process';
 
 export interface AuthResult {
   success: boolean;
   accessToken?: string;
+  refreshToken?: string;
   errors?: Array<{ field: string; message: string }>;
 }
 
@@ -60,10 +63,14 @@ export class AuthService {
       login: user.login,
       email: user.email 
     };
+
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '10m' });
+    const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
     
     return {
       success: true,
-      accessToken: this.jwtService.sign(payload),
+      accessToken: accessToken,
+      refreshToken: refreshToken
     };
   }
 

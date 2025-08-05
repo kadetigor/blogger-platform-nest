@@ -14,6 +14,7 @@ import {
   UnauthorizedException,
   UseGuards,
   UseFilters,
+  NotFoundException,
 } from '@nestjs/common';
 import { PostsService } from '../application/posts.service';
 import { PostsQueryRepository } from '../infrastructure/query/posts.query-repository';
@@ -22,7 +23,7 @@ import { PaginatedViewDto } from 'src/core/dto/base.paginated.view-dto';
 import { PostViewDto } from './view-dto/post.view-dto';
 import { CreatePostInputDto } from './input-dto/post.input-dto';
 import { RequestWithUser } from 'types/custom-request.interface';
-import { CommentsExternalQueryRepository } from '../../comments/infrastructure/external-query/comments.external-query-repository';
+import { CommentsExternalQueryRepository } from '../../comments/infrastructure/external/comments.external-query-repository';
 import { CommentViewDto } from '../../comments/api/view-dto.ts/comment.view-dto';
 import { CommentsExtertalService } from '../../comments/application/comments.external-service';
 import { CreateCommentInputDto } from '../../comments/api/input-dto.ts/create-comment.input-dto';
@@ -31,6 +32,8 @@ import { ValidationExceptionFilter } from 'src/core/filters/validation-exception
 import { GetCommentsQueryParams } from '../../comments/api/input-dto.ts/get-comments-query-params.input-dto';
 import { UpdateCommentDto } from '../../comments/dto/update-comment.dto';
 import { BasicAuthGuard } from 'src/modules/user-accounts/guards/basic/basic.auth-guard';
+import { CommentsLikesExternalRepository } from '../../comments/infrastructure/external/comments-likes.external-repository';
+import { UserViewDto } from 'src/modules/user-accounts/api/view-dto/users.view-dto';
 
 @Controller('posts')
 export class PostsController {
@@ -39,6 +42,7 @@ export class PostsController {
     private postsQueryRepository: PostsQueryRepository,
     private commentsExternalQueryRepository: CommentsExternalQueryRepository,
     private commentsExternalService: CommentsExtertalService,
+    private commentsLikesExternalRepository: CommentsLikesExternalRepository,
   ) {
     console.log('PostsController created');
   }
@@ -79,6 +83,23 @@ export class PostsController {
     const post = await this.postsQueryRepository.getPostById(postId);
 
     return this.commentsExternalService.createComment(postId, dto, user!)
+  }
+
+  @Put(':postId/like-status')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async updatePostLikeStatus(
+    @Param('postId') postId: string,
+    @Body() likeStatus: "Like" | "Dislike" | "None",
+    @Req() req: RequestWithUser
+  ) {
+    const userId = req.user?.id
+    
+    if(!this.postsQueryRepository.getPostById(postId)){
+      throw new NotFoundException('post does not exist')
+    }
+
+    return this.commentsLikesExternalRepository.setLikeStatus(postId, userId!, likeStatus)
   }
 
   @Get()
