@@ -10,6 +10,7 @@ import {
   BadRequestException,
   UnauthorizedException,
   Res,
+  Put,
 } from '@nestjs/common';
 import { AuthService } from '../application/auth.service';
 import {
@@ -20,6 +21,7 @@ import {
 } from './input-dto/auth.input-dto';
 import { JwtAuthGuard } from '../guards/bearer/jwt.auth-guard';
 import { Response } from 'express';
+import { PasswordRecoveryDto } from './input-dto/password-recovery-dto';
 
 @Controller('auth')
 export class AuthController {
@@ -102,5 +104,21 @@ export class AuthController {
       login: req.user.login,
       email: req.user.email,
     };
+  }
+
+  @Put('password-recovery')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async passwordRecoveryEmail(
+    @Body() email: string,
+  ): Promise<void> {
+    return await this.authService.sendPasswordRecoveryEmail(email)
+  }
+
+  @Put('new-password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async confirmPasswordRecovery(
+    @Body() passwordRecoveryDto: PasswordRecoveryDto
+  ): Promise<void> {
+    return await this.authService.confirmPasswordRecovery(passwordRecoveryDto)
   }
 }

@@ -1,5 +1,5 @@
 // src/modules/user-accounts/application/auth.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersRepository } from '../infrastructure/users.repository';
 import { UsersService } from './users.service';
@@ -9,6 +9,7 @@ import { randomUUID } from 'crypto';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { v4 as uuid } from 'uuid';
 import { ref } from 'process';
+import { PasswordRecoveryDto } from '../api/input-dto/password-recovery-dto';
 
 export interface AuthResult {
   success: boolean;
@@ -184,5 +185,40 @@ export class AuthService {
         errors: [{ field: 'email', message: 'Failed to resend email' }],
       };
     }
+  }
+
+  async sendPasswordRecoveryEmail(email: string): Promise<void> {
+    const user = await this.usersRepository.findByLoginOrEmail(email);
+
+    if(!user) {
+      throw new NotFoundException('user not found')
+    }
+    const newConfirmationCode = uuid();
+
+    await this.usersRepository.updateConfirmationCode(user.id, newConfirmationCode);
+
+    try {
+      const updatedUser = { ...user, confirmationCode: newConfirmationCode }
+      await this.emailService.sendPasswordRecoveryEmail(updatedUser.email, updatedUser.confirmationCode);
+    } catch (error) {
+      console.log('Email sending failed, but code update continues:', error);
+    }
+  }
+
+  async confirmPasswordRecovery(passwordRecoveryDto: PasswordRecoveryDto): Promise<void> {
+    const code = passwordRecoveryDto.recoveryCode
+    const newPassword = passwordRecoveryDto.newPassword
+
+    const user = await this.usersRepository.findByConfirmationCode(code)
+
+    if(!user) {
+      throw new NotFoundException('user not found')
+    }
+
+    const newPasswordHash = await bcrypt.hash(newPassword, 10)
+
+    await this.usersRepository.updatePassword(user.id, newPasswordHash)
+
+    await this.usersRepository.clearRecoveryCode(user.id);
   }
 }

@@ -17,7 +17,7 @@ export class CommentsController {
     console.log('CommentsController created')
   }
 
-  @Put(':commentId/likie-status')
+  @Put(':commentId/like-status')
   @HttpCode(HttpStatus.NO_CONTENT)
   async updateLikeStatus(
     @Param('commentId') commentId: string,

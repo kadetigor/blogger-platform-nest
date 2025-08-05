@@ -34,6 +34,7 @@ import { UpdateCommentDto } from '../../comments/dto/update-comment.dto';
 import { BasicAuthGuard } from 'src/modules/user-accounts/guards/basic/basic.auth-guard';
 import { CommentsLikesExternalRepository } from '../../comments/infrastructure/external/comments-likes.external-repository';
 import { UserViewDto } from 'src/modules/user-accounts/api/view-dto/users.view-dto';
+import { PostLikeRepository } from '../infrastructure/posts-likes.repository';
 
 @Controller('posts')
 export class PostsController {
@@ -42,7 +43,7 @@ export class PostsController {
     private postsQueryRepository: PostsQueryRepository,
     private commentsExternalQueryRepository: CommentsExternalQueryRepository,
     private commentsExternalService: CommentsExtertalService,
-    private commentsLikesExternalRepository: CommentsLikesExternalRepository,
+    private postsLikesRepository: PostLikeRepository,
   ) {
     console.log('PostsController created');
   }
@@ -99,7 +100,9 @@ export class PostsController {
       throw new NotFoundException('post does not exist')
     }
 
-    return this.commentsLikesExternalRepository.setLikeStatus(postId, userId!, likeStatus)
+    //return this.commentsLikesExternalRepository.setLikeStatus(postId, userId!, likeStatus)
+
+    return this.postsLikesRepository.setLikeStatus(postId, userId!, likeStatus)
   }
 
   @Get()

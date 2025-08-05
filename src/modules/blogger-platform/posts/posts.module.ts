@@ -10,6 +10,7 @@ import { PostsExternalQueryRepository } from './infrastructure/external-query/po
 import { PostsExternalService } from './application/posts.external-service';
 import { CommentsModule } from '../comments/comments.module';
 import { UserAccountsModule } from 'src/modules/user-accounts/user-accounts.module';
+import { PostLikeRepository } from './infrastructure/posts-likes.repository';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { UserAccountsModule } from 'src/modules/user-accounts/user-accounts.modu
     PostsQueryRepository,
     PostsExternalQueryRepository,
     PostsExternalService,
+    PostLikeRepository
   ],
   exports: [PostsExternalQueryRepository, PostsExternalService],
 })

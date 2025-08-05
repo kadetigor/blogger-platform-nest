@@ -1,5 +1,4 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { CommentatorInfoSchema } from "./schemas/commentor-info.schema";
 import { HydratedDocument, Model } from "mongoose";
 import { CreateCommentLikeDto } from "../dto/create-comment-like.dto";
 

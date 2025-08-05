@@ -72,4 +72,28 @@ export class UsersRepository {
   async count(): Promise<number> {
     return await this.UserModel.countDocuments({ deletedAt: null }).exec();
   }
+
+  async updateConfirmationCode(id: string, newConfirmationCode: string): Promise<boolean> {
+        const result = await this.UserModel.findByIdAndUpdate(
+            id,
+            { $set: { 'emailConfirmation.confirmationCode': newConfirmationCode } }
+        );
+        return !!result;
+    }
+  
+  async updatePassword(id: string, passwordHash: string): Promise<boolean> {
+        const result = await this.UserModel.findByIdAndUpdate(
+            id,
+            { $set: { passwordHash } }
+        );
+        return !!result;
+    }
+
+  async clearRecoveryCode(id: string): Promise<boolean> {
+      const result = await this.UserModel.findByIdAndUpdate(
+          id,
+          { $set: { 'emailConfirmation.confirmationCode': '' } }
+      );
+      return !!result;
+  }
 }
