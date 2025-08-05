@@ -8,7 +8,7 @@ export class CommentLike {
     @Prop({ type: String, required: true })
     commentId: string;
 
-    @Prop({ type: CommentatorInfoSchema })
+    @Prop({ type: String, required: true })
     userId: string;
 
     @Prop ({ type: String, enum: ["Like", "Dislike"], required: true })

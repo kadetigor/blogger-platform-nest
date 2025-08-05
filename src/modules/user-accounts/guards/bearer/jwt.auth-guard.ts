@@ -1,17 +1,12 @@
-import { Injectable } from '@nestjs/common';
+// src/modules/user-accounts/guards/bearer/jwt.auth-guard.ts
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { DomainException } from '../../../../core/exceptions/domain-exceptions';
-import { DomainExceptionCode } from '../../../../core/exceptions/domain-exception-codes';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
-  handleRequest(err, user) {
+  handleRequest(err: any, user: any, info: any) {
     if (err || !user) {
-      // здесь можно выбросить любую свою ошибку
-      throw new DomainException({
-        code: DomainExceptionCode.Unauthorized,
-        message: 'Unauthorized',
-      });
+      throw new UnauthorizedException('Unauthorized');
     }
     return user;
   }

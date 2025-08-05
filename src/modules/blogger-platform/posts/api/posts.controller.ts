@@ -13,6 +13,7 @@ import {
   Req,
   UnauthorizedException,
   UseGuards,
+  UseFilters,
 } from '@nestjs/common';
 import { PostsService } from '../application/posts.service';
 import { PostsQueryRepository } from '../infrastructure/query/posts.query-repository';
@@ -26,6 +27,8 @@ import { CommentViewDto } from '../../comments/api/view-dto.ts/comment.view-dto'
 import { CommentsExtertalService } from '../../comments/application/comments.external-service';
 import { CreateCommentInputDto } from '../../comments/api/input-dto.ts/create-comment.input-dto';
 import { JwtAuthGuard } from 'src/modules/user-accounts/guards/bearer/jwt.auth-guard';
+import { ValidationExceptionFilter } from 'src/core/filters/validation-exception.filter';
+import { GetCommentsQueryParams } from '../../comments/api/input-dto.ts/get-comments-query-params.input-dto';
 
 @Controller('posts')
 export class PostsController {
@@ -38,18 +41,21 @@ export class PostsController {
     console.log('PostsController created');
   }
 
-  // @Get(':postId/comments')
-  // async getCommentsForPost(
-  //   @Param('postId') postId: string,
-  //   @Req() req: RequestWithUser,
-  // ): Promise<PaginatedViewDto<PostViewDto[]>> {
-  //   const userId = req.user?.id as string;
-  //   return this.commentsQueryRepository.getCommentsForPost(postId: string, userId: string)
-  // }
+  @Get(':postId/comments')
+  async getCommentsForPost(
+    @Param('postId') postId: string,
+    @Query() query: GetCommentsQueryParams,
+    @Req() req: RequestWithUser,
+  ): Promise<PaginatedViewDto<PostViewDto[]>> {
+    const userId = req.user?.id as string;
+
+    return this.commentsExternalQueryRepository.getCommentsForPost(postId, userId, query)
+  }
 
   @Post(':postId/comments')
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(JwtAuthGuard)
+  @UseFilters(ValidationExceptionFilter)
   async createCommentUnderPost(
     @Param('postId') postId: string,
     @Body() dto: CreateCommentInputDto,

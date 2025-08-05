@@ -23,8 +23,10 @@ export class Comment {
     static createInstance(dto: CreateCommentDto): CommentDocument {
         const comment = new this();
         comment.content = dto.content;
-        comment.commentatorInfo.userId = dto.commentatorInfo.userId;
-        comment.commentatorInfo.userLogin = dto.commentatorInfo.userLogin;
+        comment.commentatorInfo = {  // Fixed: Initialize the object
+            userId: dto.commentatorInfo.userId,
+            userLogin: dto.commentatorInfo.userLogin
+        };
         comment.postId = dto.postId;
         comment.deletedAt = null;
 

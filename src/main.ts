@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { HttpExceptionFilter } from './core/filters/http-exception.filter';
+import { ValidationExceptionFilter } from './core/filters/validation-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -28,6 +29,8 @@ async function bootstrap() {
   
   // Apply exception filter globally
   app.useGlobalFilters(new HttpExceptionFilter());
+  // In main.ts or in your test setup
+  app.useGlobalFilters(new ValidationExceptionFilter());
   
   // Enable CORS if needed
   app.enableCors();
