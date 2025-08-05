@@ -8,7 +8,7 @@ export class PostLikeRepository {
 
     constructor(@InjectModel(PostLike.name) private PostLikeModel: PostLikeModelType){}
 
-    async setLikeStatus(postId: string, userId: string, status: "Like" | "Dislike" | "None"):Promise<void> {
+    async setLikeStatus(postId: string, userId: string, status: string):Promise<void> {
         if (status === "None"){
             await this.PostLikeModel.deleteOne({ postId, userId })
             return;

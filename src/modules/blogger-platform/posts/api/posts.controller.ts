@@ -35,6 +35,7 @@ import { BasicAuthGuard } from 'src/modules/user-accounts/guards/basic/basic.aut
 import { CommentsLikesExternalRepository } from '../../comments/infrastructure/external/comments-likes.external-repository';
 import { UserViewDto } from 'src/modules/user-accounts/api/view-dto/users.view-dto';
 import { PostLikeRepository } from '../infrastructure/posts-likes.repository';
+import { LikeStatusUpdateDto } from './input-dto/like-status-update-dto';
 
 @Controller('posts')
 export class PostsController {
@@ -81,8 +82,6 @@ export class PostsController {
   ): Promise <CommentViewDto> {
     const user = req.user;
 
-    const post = await this.postsQueryRepository.getPostById(postId);
-
     return this.commentsExternalService.createComment(postId, dto, user!)
   }
 
@@ -91,18 +90,18 @@ export class PostsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async updatePostLikeStatus(
     @Param('postId') postId: string,
-    @Body() likeStatus: "Like" | "Dislike" | "None",
+    @Body() likeStatus: LikeStatusUpdateDto,
     @Req() req: RequestWithUser
   ) {
     const userId = req.user?.id
     
-    if(!this.postsQueryRepository.getPostById(postId)){
+    if(!await this.postsQueryRepository.getPostById(postId)){
       throw new NotFoundException('post does not exist')
     }
 
     //return this.commentsLikesExternalRepository.setLikeStatus(postId, userId!, likeStatus)
 
-    return this.postsLikesRepository.setLikeStatus(postId, userId!, likeStatus)
+    return this.postsLikesRepository.setLikeStatus(postId, userId!, likeStatus.likeStatus)
   }
 
   @Get()
