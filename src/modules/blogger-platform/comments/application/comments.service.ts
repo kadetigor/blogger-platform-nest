@@ -15,12 +15,6 @@ export class CommentsService {
     @InjectModel(Comment.name) private CommentModel: CommentModelType,
   ) { }
 
-  async createComment(dto: CreateCommentInputDto): Promise<string> {
-
-
-    return this.commentsRepository.create(newComment);
-  }
-
   async updateComment(id: string, dto: UpdateCommentDto): Promise<void> {
     await this.commentsRepository.updateComment(id, dto)
     return;

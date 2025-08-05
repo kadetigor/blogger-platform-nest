@@ -4,6 +4,7 @@ import { CommentsLikesRepository } from "./infrastructure/comments-likes.reposit
 import { CommentsQueryRepository } from "./infrastructure/query/comments.query-repository";
 import { CommentsRepository } from "./infrastructure/comments.repository";
 import { CommentsService } from "./application/comments.service";
+import { CommentsExtertalService } from "./application/comments.external-service";
 
 @Module({
   imports: [],
@@ -13,6 +14,7 @@ import { CommentsService } from "./application/comments.service";
     CommentsQueryRepository,
     CommentsRepository,
     CommentsService
-  ]
+  ],
+  exports: [CommentsExtertalService]
 })
 export class CommentsModule { }

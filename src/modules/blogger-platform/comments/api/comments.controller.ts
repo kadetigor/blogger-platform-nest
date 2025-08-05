@@ -3,8 +3,6 @@ import { LikeStatusUpdateDto } from "../dto/update-comment-like.dto";
 import { UpdateCommentDto } from "../dto/update-comment.dto";
 import { CommentViewDto } from "./view-dto.ts/comment.view-dto";
 import { CommentsQueryRepository } from "../infrastructure/query/comments.query-repository";
-import { Request } from 'express';
-import { REQUEST } from "@nestjs/core";
 import { RequestWithUser } from "types/custom-request.interface";
 import { CommentsLikesRepository } from "../infrastructure/comments-likes.repository";
 import { CommentsService } from "../application/comments.service";
@@ -15,7 +13,6 @@ export class CommentsController {
     private readonly commentsService: CommentsService,
     private commentsQueryRepository: CommentsQueryRepository,
     private commentsLikesRepository: CommentsLikesRepository,
-    @Inject(REQUEST) private request: Request,
   ) {
     console.log('CommentsController created')
   }

@@ -8,11 +8,13 @@ import { Post, PostSchema } from './domain/post.entity';
 import { BlogsModule } from '../blogs/blogs.module';
 import { PostsExternalQueryRepository } from './infrastructure/external-query/posts.external-query-repository';
 import { PostsExternalService } from './application/posts.external-service';
+import { CommentsModule } from '../comments/comments.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Post.name, schema: PostSchema }]),
     forwardRef(() => BlogsModule),
+    CommentsModule,
   ],
   controllers: [PostsController],
   providers: [
@@ -24,4 +26,4 @@ import { PostsExternalService } from './application/posts.external-service';
   ],
   exports: [PostsExternalQueryRepository, PostsExternalService],
 })
-export class PostsModule {}
+export class PostsModule { }

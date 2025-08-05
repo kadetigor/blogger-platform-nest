@@ -31,12 +31,6 @@ export class Comment {
         return comment as CommentDocument
     }
 
-    makeDeleted() {
-        if (this.deletedAt !== null) {
-        throw new Error('Entity already deleted');
-        }
-        this.deletedAt = new Date();
-    }
 }
 
 export const CommentSchema = SchemaFactory.createForClass(Comment);
