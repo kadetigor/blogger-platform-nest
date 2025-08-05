@@ -12,7 +12,6 @@ export class CommentsExtertalService {
 
   constructor(
     private commentsRepository: CommentsRepository,
-    private postsExternalQueryRepository: PostsExternalQueryRepository,
     private commentsLikesRepository: CommentsLikesRepository,
     @InjectModel(Comment.name) private CommentModel: CommentModelType,
   ) { }
@@ -22,12 +21,6 @@ export class CommentsExtertalService {
     if (!user) {
         throw new UnauthorizedException('no user found')
       }
-
-    const post = await this.postsExternalQueryRepository.getPostById(postId)
-
-    if (!post) {
-      throw new NotFoundException('post not found')
-    }
 
     const newComment = {
       content: dto.content,

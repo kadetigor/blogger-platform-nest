@@ -19,9 +19,7 @@ export class CommentViewDto {
     dto.content = comment.content
     dto.commentatorInfo.userId = comment.commentatorInfo.userId
     dto.createdAt = comment.createdAt
-    dto.likesInfo.likesCount = likes.likesCount
-    dto.likesInfo.dislikesCount = likes.dislikesCount
-    dto.likesInfo.myStatus = likes.myStatus
+    dto.likesInfo = likes;
     return dto
   }
 }

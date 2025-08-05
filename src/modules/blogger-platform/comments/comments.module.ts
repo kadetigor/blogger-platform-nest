@@ -7,9 +7,17 @@ import { CommentsService } from "./application/comments.service";
 import { CommentsExtertalService } from "./application/comments.external-service";
 import { PostsModule } from "../posts/posts.module";
 import { CommentsExternalQueryRepository } from "./infrastructure/external-query/comments.external-query-repository";
+import { MongooseModule } from "@nestjs/mongoose";
+import { Comment, CommentSchema } from "./domain/comment.entity";
+import { CommentLike, CommentLikeSchema } from "./domain/comment-like.entity";
 
 @Module({
-  imports: [PostsModule],
+  imports: [
+    MongooseModule.forFeature([
+      { name: Comment.name, schema: CommentSchema },
+      { name: CommentLike.name, schema: CommentLikeSchema }
+    ]),
+  ],
   controllers: [CommentsController],
   providers: [
     CommentsLikesRepository,

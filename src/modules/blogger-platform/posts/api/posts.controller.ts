@@ -11,6 +11,7 @@ import {
   HttpStatus,
   HttpCode,
   Req,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { PostsService } from '../application/posts.service';
 import { PostsQueryRepository } from '../infrastructure/query/posts.query-repository';
@@ -52,7 +53,14 @@ export class PostsController {
     @Req() req: RequestWithUser,
   ): Promise <CommentViewDto> {
     const user = req.user;
-    return this.commentsExternalService.createComment(postId, dto, user!)
+
+    if (!user) {
+      throw new UnauthorizedException('no user found')
+    }
+
+    const post = await this.postsQueryRepository.getPostById(postId);
+    
+    return this.commentsExternalService.createComment(postId, dto, user)
   }
 
   @Get()
