@@ -11,53 +11,54 @@ import { CommentsService } from "../application/comments.service";
 
 @Controller('comments')
 export class CommentsController {
-    constructor(
-        private readonly commentsService: CommentsService,
-        private commentsQueryRepository: CommentsQueryRepository,
-        private commentsLikesQueryRepository: CommentsLikesRepository
-        @Inject(REQUEST) private request: Request,
-    ) {
-        console.log('CommentsController created')
-    }
+  constructor(
+    private readonly commentsService: CommentsService,
+    private commentsQueryRepository: CommentsQueryRepository,
+    private commentsLikesRepository: CommentsLikesRepository,
+    @Inject(REQUEST) private request: Request,
+  ) {
+    console.log('CommentsController created')
+  }
 
-    @Put(':commentId/likie-status')
-    @HttpCode(HttpStatus.NO_CONTENT)
-    async updateLikeStatus(
-        @Param('commentId') commentId: string,
-        @Body() dto: LikeStatusUpdateDto,
-    ): Promise<void> {
-        const status = dto.likeStatus
-        return await this.commentsService.updateLikeStatus(commentId, status)
-    }
+  @Put(':commentId/likie-status')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async updateLikeStatus(
+    @Param('commentId') commentId: string,
+    @Body() dto: LikeStatusUpdateDto,
+    @Req() req: RequestWithUser,
+  ): Promise<void> {
+    const status = dto.likeStatus
+    const userId = req.user?.id as string;
+    return await this.commentsService.updateLikeInfo(commentId, userId, status)
+  }
 
-    @Put(':commentId')
-    @HttpCode(HttpStatus.NO_CONTENT)
-    async updateComment(
-        @Param('commentId') commentId: string,
-        @Body() dto: UpdateCommentDto,
-    ): Promise<void> {
-        const content = dto.content
-        return await this.commentsService.updateComment(commentId, content)
-    }
+  @Put(':commentId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async updateComment(
+    @Param('commentId') commentId: string,
+    @Body() dto: UpdateCommentDto,
+  ): Promise<void> {
+    return await this.commentsService.updateComment(commentId, dto)
+  }
 
-    @Delete(':commentId')
-    @HttpCode(HttpStatus.NO_CONTENT)
-    async deleteComment(
-        @Param('commentId') commentId: string,
-    ): Promise<void> {
-        return await this.commentsService.removeComment(commentId)
-    }
+  @Delete(':commentId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteComment(
+    @Param('commentId') commentId: string,
+  ): Promise<void> {
+    return await this.commentsService.removeComment(commentId)
+  }
 
-    @Get(':id')
-    async findOneComment(
-        @Param('id') id: string,
-        @Req() req: RequestWithUser
-    ):Promise<CommentViewDto> {
-        // Getting user infor from the JWT token
-        const userId = req.user?.id;
-        const comment = await this.commentsQueryRepository.getByIdOrNotFoundFail(id)
-        const likeInfo = await this.commentsLikesQueryRepository.getByIdOrNotFoundFail(id, userId)
-        const result = CommentViewDto.mapToView(comment, likeInfo)
-        return result;
-    }
+  @Get(':id')
+  async findOneComment(
+    @Param('id') id: string,
+    @Req() req: RequestWithUser
+  ): Promise<CommentViewDto> {
+    // Getting user infor from the JWT token
+    const userId = req.user?.id;
+    const comment = await this.commentsQueryRepository.getByIdOrNotFoundFail(id)
+    const likeInfo = await this.commentsLikesRepository.getLikesInfo(id, userId)
+    const result = CommentViewDto.mapToView(comment, likeInfo)
+    return result;
+  }
 }
