@@ -5,7 +5,6 @@ import { CreateCommentInputDto } from "../api/input-dto.ts/create-comment.input-
 import { Comment, CommentModelType } from "../domain/comment.entity";
 import { InjectModel } from "@nestjs/mongoose";
 import { CommentViewDto } from "../api/view-dto.ts/comment.view-dto";
-import { PostsExternalQueryRepository } from "../../posts/infrastructure/external-query/posts.external-query-repository";
 
 @Injectable()
 export class CommentsExtertalService {
@@ -35,11 +34,9 @@ export class CommentsExtertalService {
 
     const comment = await this.commentsRepository.createComment(newComment)
 
-    const createdComment = await this.commentsRepository.findByIdOrFail(comment.id);
+    const likesInfo = await this.commentsLikesRepository.getLikesInfo(comment.id, user.id);
 
-    const likesInfo = await this.commentsLikesRepository.getLikesInfo(createdComment.id, user.id);
-
-    const commentViewModel = CommentViewDto.mapToView(createdComment, likesInfo);
+    const commentViewModel = CommentViewDto.mapToView(comment, likesInfo);
 
     return commentViewModel;
   }

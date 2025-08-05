@@ -17,7 +17,10 @@ export class CommentViewDto {
 
     dto.id = comment._id.toString()
     dto.content = comment.content
-    dto.commentatorInfo.userId = comment.commentatorInfo.userId
+    dto.commentatorInfo = {
+      userId: comment.commentatorInfo.userId,
+      userLogin: comment.commentatorInfo.userLogin
+    };
     dto.createdAt = comment.createdAt
     dto.likesInfo = likes;
     return dto

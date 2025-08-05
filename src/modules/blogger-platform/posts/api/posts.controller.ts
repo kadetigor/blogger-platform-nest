@@ -12,6 +12,7 @@ import {
   HttpCode,
   Req,
   UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import { PostsService } from '../application/posts.service';
 import { PostsQueryRepository } from '../infrastructure/query/posts.query-repository';
@@ -24,6 +25,7 @@ import { CommentsExternalQueryRepository } from '../../comments/infrastructure/e
 import { CommentViewDto } from '../../comments/api/view-dto.ts/comment.view-dto';
 import { CommentsExtertalService } from '../../comments/application/comments.external-service';
 import { CreateCommentInputDto } from '../../comments/api/input-dto.ts/create-comment.input-dto';
+import { JwtAuthGuard } from 'src/modules/user-accounts/guards/bearer/jwt.auth-guard';
 
 @Controller('posts')
 export class PostsController {
@@ -47,6 +49,7 @@ export class PostsController {
 
   @Post(':postId/comments')
   @HttpCode(HttpStatus.CREATED)
+  @UseGuards(JwtAuthGuard)
   async createCommentUnderPost(
     @Param('postId') postId: string,
     @Body() dto: CreateCommentInputDto,
@@ -54,13 +57,9 @@ export class PostsController {
   ): Promise <CommentViewDto> {
     const user = req.user;
 
-    if (!user) {
-      throw new UnauthorizedException('no user found')
-    }
-
     const post = await this.postsQueryRepository.getPostById(postId);
-    
-    return this.commentsExternalService.createComment(postId, dto, user)
+
+    return this.commentsExternalService.createComment(postId, dto, user!)
   }
 
   @Get()

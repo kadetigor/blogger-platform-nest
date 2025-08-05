@@ -9,12 +9,14 @@ import { BlogsModule } from '../blogs/blogs.module';
 import { PostsExternalQueryRepository } from './infrastructure/external-query/posts.external-query-repository';
 import { PostsExternalService } from './application/posts.external-service';
 import { CommentsModule } from '../comments/comments.module';
+import { UserAccountsModule } from 'src/modules/user-accounts/user-accounts.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Post.name, schema: PostSchema }]),
     forwardRef(() => BlogsModule),
     CommentsModule,
+    UserAccountsModule
   ],
   controllers: [PostsController],
   providers: [

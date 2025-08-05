@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Comment, CommentDocument, CommentModelType } from "../../domain/comment.entity";
-import { CommentViewDto } from "../../api/view-dto.ts/comment.view-dto";
 import { CommentLike, CommentLikeModelType } from "../../domain/comment-like.entity";
 
 @Injectable()
@@ -18,7 +17,7 @@ export class CommentsQueryRepository{
         });
     
         if (!comment) {
-          throw new NotFoundException('user not found');
+          throw new NotFoundException('comment not found');
         }
 
         return comment;
