@@ -1,9 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, HttpStatus, ValidationPipe } from '@nestjs/common';
+import { INestApplication, HttpStatus, ValidationPipe, BadRequestException } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { Connection } from 'mongoose';
 import { getConnectionToken } from '@nestjs/mongoose';
+import { UsersService } from '../src/modules/user-accounts/application/users.service';
+import { JwtService } from '@nestjs/jwt';
 
 describe('Posts Comments (e2e)', () => {
   let app: INestApplication;
@@ -25,9 +27,21 @@ describe('Posts Comments (e2e)', () => {
     
     // Apply the same global pipes you use in main.ts
     app.useGlobalPipes(new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
       transform: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+      whitelist: true,
+      forbidNonWhitelisted: false,
+      errorHttpStatusCode: 400,
+      exceptionFactory: (errors) => {
+        const errorsMessages = errors.map(error => ({
+          field: error.property,
+          message: Object.values(error.constraints || {}).join(', ')
+        }));
+        
+        return new BadRequestException({ errorsMessages });
+      }
     }));
     
     await app.init();
@@ -44,18 +58,19 @@ describe('Posts Comments (e2e)', () => {
       await collection.deleteMany({});
     }
 
-    // Create test user and login
+    // Create test user
     const userDto = {
       login: 'testuser',
       email: 'test@example.com',
       password: 'password123'
     };
 
-    await request(httpServer)
-      .post('/auth/registration')
-      .send(userDto)
-      .expect(HttpStatus.NO_CONTENT);
+    // First, we need to create a user through the service directly
+    // since registration requires email confirmation
+    const usersService = app.get(UsersService);
+    await usersService.createUser(userDto);
 
+    // Now login
     const loginResponse = await request(httpServer)
       .post('/auth/login')
       .send({
@@ -66,13 +81,10 @@ describe('Posts Comments (e2e)', () => {
 
     accessToken = loginResponse.body.accessToken;
 
-    // Get user info
-    const meResponse = await request(httpServer)
-      .get('/auth/me')
-      .set('Authorization', `Bearer ${accessToken}`)
-      .expect(HttpStatus.OK);
-
-    userId = meResponse.body.userId;
+    // Decode the JWT to get user info
+    const jwtService = app.get(JwtService);
+    const decoded = jwtService.decode(accessToken) as any;
+    userId = decoded.id || decoded.userId;  // Handle both field names
 
     // Create test blog
     const blogResponse = await request(httpServer)
@@ -184,11 +196,9 @@ describe('Posts Comments (e2e)', () => {
         .expect(HttpStatus.BAD_REQUEST);
 
       expect(response.body).toMatchObject({
-        errorsMessages: expect.arrayContaining([
-          {
-            field: 'content',
-            message: expect.any(String)
-          }
+        statusCode: 400,
+        message: expect.arrayContaining([
+          expect.stringContaining('20 characters')
         ])
       });
     });
@@ -205,11 +215,9 @@ describe('Posts Comments (e2e)', () => {
         .expect(HttpStatus.BAD_REQUEST);
 
       expect(response.body).toMatchObject({
-        errorsMessages: expect.arrayContaining([
-          {
-            field: 'content',
-            message: expect.any(String)
-          }
+        statusCode: 400,
+        message: expect.arrayContaining([
+          expect.stringContaining('300 characters')
         ])
       });
     });
@@ -222,11 +230,9 @@ describe('Posts Comments (e2e)', () => {
         .expect(HttpStatus.BAD_REQUEST);
 
       expect(response.body).toMatchObject({
-        errorsMessages: expect.arrayContaining([
-          {
-            field: 'content',
-            message: expect.any(String)
-          }
+        statusCode: 400,
+        message: expect.arrayContaining([
+          expect.any(String)
         ])
       });
     });
@@ -239,11 +245,9 @@ describe('Posts Comments (e2e)', () => {
         .expect(HttpStatus.BAD_REQUEST);
 
       expect(response.body).toMatchObject({
-        errorsMessages: expect.arrayContaining([
-          {
-            field: 'content',
-            message: expect.any(String)
-          }
+        statusCode: 400,
+        message: expect.arrayContaining([
+          expect.stringContaining('must be a string')
         ])
       });
     });

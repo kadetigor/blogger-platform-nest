@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Post, PostModelType } from '../../domain/post.entity';
 import { PostViewDto } from '../../api/view-dto/post.view-dto';
-import { FilterQuery } from 'mongoose';
+import { FilterQuery, isValidObjectId } from 'mongoose';
 import { PaginatedViewDto } from 'src/core/dto/base.paginated.view-dto';
 import { GetPostsQueryParams } from '../../api/input-dto/get-posts-query-params.input-dto';
 
@@ -11,6 +11,11 @@ export class PostsQueryRepository {
   constructor(@InjectModel(Post.name) private PostModel: PostModelType) {}
 
   async getPostById(id: string): Promise<PostViewDto> {
+
+    if (!isValidObjectId(id)) {
+      throw new NotFoundException('post not found');
+    }
+
     const post = await this.PostModel.findOne({
       _id: id,
       deletedAt: null,
