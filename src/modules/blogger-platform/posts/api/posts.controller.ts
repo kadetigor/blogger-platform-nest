@@ -45,13 +45,13 @@ export class PostsController {
   // }
 
   @Post(':postId/comments')
+  @HttpCode(HttpStatus.CREATED)
   async createCommentUnderPost(
     @Param('postId') postId: string,
     @Body() dto: CreateCommentInputDto,
     @Req() req: RequestWithUser,
-  ): Promise <PaginatedViewDto<CommentViewDto[]>> {
+  ): Promise <CommentViewDto> {
     const user = req.user;
-    
     return this.commentsExternalService.createComment(postId, dto, user!)
   }
 

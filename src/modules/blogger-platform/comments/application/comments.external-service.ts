@@ -1,24 +1,33 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { CommentsRepository } from "../infrastructure/comments.repository";
 import { CommentsLikesRepository } from "../infrastructure/comments-likes.repository";
 import { CreateCommentInputDto } from "../api/input-dto.ts/create-comment.input-dto";
-import { Comment, CommentDocument, CommentModelType } from "../domain/comment.entity";
+import { Comment, CommentModelType } from "../domain/comment.entity";
 import { InjectModel } from "@nestjs/mongoose";
 import { CommentViewDto } from "../api/view-dto.ts/comment.view-dto";
+import { PostsExternalQueryRepository } from "../../posts/infrastructure/external-query/posts.external-query-repository";
 
 @Injectable()
 export class CommentsExtertalService {
 
   constructor(
     private commentsRepository: CommentsRepository,
+    private postsExternalQueryRepository: PostsExternalQueryRepository,
+    private commentsLikesRepository: CommentsLikesRepository,
     @InjectModel(Comment.name) private CommentModel: CommentModelType,
   ) { }
 
-  async createComment(postId: string, dto: CreateCommentInputDto, user: {id: string, login: string}): Promise<CommentDocument> {
+  async createComment(postId: string, dto: CreateCommentInputDto, user: {id: string, login: string}): Promise<CommentViewDto> {
 
     if (!user) {
         throw new UnauthorizedException('no user found')
       }
+
+    const post = await this.postsExternalQueryRepository.getPostById(postId)
+
+    if (!post) {
+      throw new NotFoundException('post not found')
+    }
 
     const newComment = {
       content: dto.content,
@@ -31,6 +40,14 @@ export class CommentsExtertalService {
       deletedAt: null
     };
 
-    return this.commentsRepository.createComment(newComment);
+    const comment = await this.commentsRepository.createComment(newComment)
+
+    const createdComment = await this.commentsRepository.findByIdOrFail(comment.id);
+
+    const likesInfo = await this.commentsLikesRepository.getLikesInfo(createdComment.id, user.id);
+
+    const commentViewModel = CommentViewDto.mapToView(createdComment, likesInfo);
+
+    return commentViewModel;
   }
 }

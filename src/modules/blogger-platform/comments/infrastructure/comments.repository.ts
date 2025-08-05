@@ -8,14 +8,14 @@ import { UpdateCommentDto } from "../dto/update-comment.dto";
 @Injectable()
 export class CommentsRepository {
   constructor(@InjectModel(Comment.name) private CommentModel: CommentModelType) { }
-  async findByIdOrFail(id: string): Promise<string> {
+  async findByIdOrFail(id: string): Promise<CommentDocument> {
     const result = await this.CommentModel.findById(id)
 
     if (!result) {
       throw new NotFoundException('Comment does not exist')
     }
 
-    return result._id.toString()
+    return result
   }
 
   async updateComment(id: string, dto: UpdateCommentDto): Promise<void> {

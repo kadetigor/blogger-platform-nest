@@ -5,16 +5,20 @@ import { CommentsQueryRepository } from "./infrastructure/query/comments.query-r
 import { CommentsRepository } from "./infrastructure/comments.repository";
 import { CommentsService } from "./application/comments.service";
 import { CommentsExtertalService } from "./application/comments.external-service";
+import { PostsModule } from "../posts/posts.module";
+import { CommentsExternalQueryRepository } from "./infrastructure/external-query/comments.external-query-repository";
 
 @Module({
-  imports: [],
+  imports: [PostsModule],
   controllers: [CommentsController],
   providers: [
     CommentsLikesRepository,
     CommentsQueryRepository,
     CommentsRepository,
-    CommentsService
+    CommentsService,
+    CommentsExternalQueryRepository,
+    CommentsExtertalService
   ],
-  exports: [CommentsExtertalService]
+  exports: [CommentsExtertalService, CommentsExternalQueryRepository]
 })
 export class CommentsModule { }
