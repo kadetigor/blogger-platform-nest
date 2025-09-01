@@ -5,13 +5,16 @@ import { PostViewDto } from '../../api/view-dto/post.view-dto';
 import { FilterQuery, isValidObjectId } from 'mongoose';
 import { PaginatedViewDto } from 'src/core/dto/base.paginated.view-dto';
 import { GetPostsQueryParams } from '../../api/input-dto/get-posts-query-params.input-dto';
+import { PostLikeRepository } from '../posts-likes.repository';
 
 @Injectable()
 export class PostsQueryRepository {
-  constructor(@InjectModel(Post.name) private PostModel: PostModelType) {}
+  constructor(
+    @InjectModel(Post.name) private PostModel: PostModelType,
+    private postLikeRepository: PostLikeRepository,
+) {}
 
-  async getPostById(id: string): Promise<PostViewDto> {
-
+  async getPostById(id: string, userId?: string): Promise<PostViewDto> {
     const post = await this.PostModel.findOne({
       _id: id,
       deletedAt: null,
@@ -21,24 +24,46 @@ export class PostsQueryRepository {
       throw new NotFoundException('post not found');
     }
 
-    return PostViewDto.mapToView(post);
+    // Get likes info for this post
+    const likesInfo = await this.postLikeRepository.getExtendedLikesInfo(
+      post._id.toString(), 
+      userId
+    );
+
+    return PostViewDto.mapToView(post, likesInfo);
   }
 
   async getAllPosts(
     query: GetPostsQueryParams,
+    userId: string  // ADD THIS PARAMETER
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
     const filter: FilterQuery<Post> = {
       deletedAt: null,
     };
 
-    const post = await this.PostModel.find(filter)
+    const posts = await this.PostModel.find(filter)
       .sort({ [query.sortBy]: query.sortDirection })
       .skip(query.calculateSkip())
       .limit(query.pageSize);
 
     const totalCount = await this.PostModel.countDocuments(filter);
 
-    const items = post.map(PostViewDto.mapToView);
+    // Get likes info for all posts
+    const likesInfoMap = new Map();
+    await Promise.all(
+      posts.map(async (post) => {
+        const likesInfo = await this.postLikeRepository.getExtendedLikesInfo(
+          post._id.toString(),
+          userId
+        );
+        likesInfoMap.set(post._id.toString(), likesInfo);
+      })
+    );
+
+    const items = posts.map(post => {
+      const likesInfo = likesInfoMap.get(post._id.toString());
+      return PostViewDto.mapToView(post, likesInfo);
+    });
 
     return PaginatedViewDto.mapToView({
       items,
@@ -51,20 +76,36 @@ export class PostsQueryRepository {
   async getAllPostsByBlog(
     query: GetPostsQueryParams,
     blogId: string,
+    userId: string
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
     const filter: FilterQuery<Post> = {
       blogId: blogId,
       deletedAt: null,
     };
 
-    const post = await this.PostModel.find(filter)
+    const posts = await this.PostModel.find(filter)
       .sort({ [query.sortBy]: query.sortDirection })
       .skip(query.calculateSkip())
       .limit(query.pageSize);
 
     const totalCount = await this.PostModel.countDocuments(filter);
 
-    const items = post.map(PostViewDto.mapToView);
+    // Get likes info for all posts
+    const likesInfoMap = new Map();
+    await Promise.all(
+      posts.map(async (post) => {
+        const likesInfo = await this.postLikeRepository.getExtendedLikesInfo(
+          post._id.toString(),
+          userId
+        );
+        likesInfoMap.set(post._id.toString(), likesInfo);
+      })
+    );
+
+    const items = posts.map(post => {
+      const likesInfo = likesInfoMap.get(post._id.toString());
+      return PostViewDto.mapToView(post, likesInfo);
+    });
 
     return PaginatedViewDto.mapToView({
       items,

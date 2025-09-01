@@ -66,7 +66,7 @@ export class AuthService {
     };
 
     const accessToken = this.jwtService.sign(payload, { expiresIn: `${this.configService.get<string>('AC_TIME')}m` });
-    const refreshToken = this.jwtService.sign(payload, { expiresIn: `${this.configService.get<string>('AC_TIME')}d` });
+    const refreshToken = this.jwtService.sign(payload, { expiresIn: `${this.configService.get<string>('REFRESH_TIME')}d` });
     
     return {
       success: true,

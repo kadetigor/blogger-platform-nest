@@ -122,9 +122,9 @@ export class AuthController {
   @UseGuards(ThrottlerGuard)
   @Throttle({ default: { limit: 5, ttl: 10000 } }) // 5 requests per 10 seconds
   async passwordRecoveryEmail(
-    @Body() PasswordRecoveryRequestDto,
+    @Body() dto: PasswordRecoveryRequestDto,
   ): Promise<void> {
-    return await this.authService.sendPasswordRecoveryEmail(PasswordRecoveryRequestDto)
+    return await this.authService.sendPasswordRecoveryEmail(dto.email)
   }
 
   @Post('new-password')

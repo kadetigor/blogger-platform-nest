@@ -9,6 +9,7 @@ import {
   Post,
   Put,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { BlogsQueryRepository } from '../infrastructure/query/blogs.query-repository';
@@ -25,6 +26,7 @@ import { GetPostsQueryParams } from '../../posts/api/input-dto/get-posts-query-p
 import { PostsExternalService } from '../../posts/application/posts.external-service';
 import { CreatePostDto } from '../../posts/dto/create-post.dto';
 import { BasicAuthGuard } from 'src/modules/user-accounts/guards/basic/basic.auth-guard';
+import { RequestWithUser } from 'types/custom-request.interface';
 
 @Controller('blogs')
 export class BlogsController {
@@ -79,11 +81,14 @@ export class BlogsController {
   async getPostsByBlog(
     @Param('id') blogId: string,
     @Query() query: GetPostsQueryParams,
+    @Req() req: RequestWithUser,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
+    const userId = req.user?.id as string
     await this.blogsQueryRepository.getByIdOrNotFoundFail(blogId);
     const result = await this.postsExternalQueryRepository.getAllPostsByBlog(
       query,
       blogId,
+      userId
     );
     return result;
   }

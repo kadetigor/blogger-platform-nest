@@ -34,6 +34,7 @@ import { UpdateCommentDto } from '../../comments/dto/update-comment.dto';
 import { BasicAuthGuard } from 'src/modules/user-accounts/guards/basic/basic.auth-guard';
 import { PostLikeRepository } from '../infrastructure/posts-likes.repository';
 import { LikeStatusUpdateDto } from './input-dto/like-status-update-dto';
+import { JwtOptionalAuthGuard } from 'src/modules/user-accounts/guards/bearer/jwt.optional-auth-guard';
 
 @Controller('posts')
 export class PostsController {
@@ -103,10 +104,13 @@ export class PostsController {
   }
 
   @Get()
+  @UseGuards(JwtOptionalAuthGuard)
   async findAll(
     @Query() query: GetPostsQueryParams,
+    @Req() req: RequestWithUser,
   ): Promise < PaginatedViewDto < PostViewDto[] >> {
-    return this.postsQueryRepository.getAllPosts(query);
+    const userId = req.user?.id as string;
+    return this.postsQueryRepository.getAllPosts(query, userId);
   }
 
   @Post()
@@ -116,8 +120,12 @@ export class PostsController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string): Promise < PostViewDto > {
-    return this.postsQueryRepository.getPostById(id);
+  async findOne(
+    @Param('id') id: string,
+    @Req() req: RequestWithUser,
+  ): Promise<PostViewDto> {
+    const userId = req.user?.id;
+    return this.postsQueryRepository.getPostById(id, userId);
   }
 
   @Put(':id')
