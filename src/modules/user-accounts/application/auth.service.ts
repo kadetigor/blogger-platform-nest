@@ -8,6 +8,7 @@ import { randomUUID } from 'crypto';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { v4 as uuid } from 'uuid';
 import { PasswordRecoveryDto } from '../api/input-dto/password-recovery-dto';
+import { ConfigService } from '@nestjs/config';
 
 export interface AuthResult {
   success: boolean;
@@ -28,6 +29,7 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
     private emailService: EmailService,
+    private configService: ConfigService,
   ) {}
 
   async validateUser(loginOrEmail: string, password: string): Promise<any> {
@@ -54,8 +56,8 @@ export class AuthService {
     const user = await this.validateUser(loginOrEmail, password);
     
     if (!user) {
-      return { success: false };
-    }
+      throw new BadRequestException({ errorsMessages: [{ field: 'user', message: 'User was not found' }] });
+    };
 
     const payload = { 
       id: user.userId, 
@@ -63,8 +65,8 @@ export class AuthService {
       email: user.email 
     };
 
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '5m' });
-    const refreshToken = this.jwtService.sign(payload, { expiresIn: '1d' });
+    const accessToken = this.jwtService.sign(payload, { expiresIn: `${this.configService.get<string>('AC_TIME')}m` });
+    const refreshToken = this.jwtService.sign(payload, { expiresIn: `${this.configService.get<string>('AC_TIME')}d` });
     
     return {
       success: true,
@@ -77,10 +79,7 @@ export class AuthService {
     // Check if user with same login exists
     const existingUserByLogin = await this.usersRepository.findByLogin(dto.login);
     if (existingUserByLogin) {
-      return {
-        success: false,
-        errors: [{ field: 'login', message: 'Login already exists' }],
-      };
+      throw new BadRequestException({ errorsMessages: [{ field: 'user', message: 'User with same login exists' }] });
     }
 
     // Check if user with same email exists
@@ -120,26 +119,17 @@ export class AuthService {
     const user = await this.usersRepository.findByConfirmationCode(code);
     
     if (!user) {
-      return {
-        success: false,
-        errors: [{ field: 'code', message: 'Invalid confirmation code' }],
-      };
+      throw new BadRequestException({ errorsMessages: [{ field: 'user', message: 'User was not found' }] });
     }
 
     if (user.isEmailConfirmed) {
-      return {
-        success: false,
-        errors: [{ field: 'code', message: 'Email already confirmed' }],
-      };
+      throw new BadRequestException({ errorsMessages: [{ field: 'email', message: 'Email already confirmed' }] });
     }
 
     const confirmed = user.confirmEmail(code);
     
     if (!confirmed) {
-      return {
-        success: false,
-        errors: [{ field: 'code', message: 'Confirmation code expired or invalid' }],
-      };
+      throw new BadRequestException({ errorsMessages: [{ field: 'code', message: 'Code expired or invalid' }] });
     }
 
     await this.usersRepository.save(user);
@@ -150,17 +140,11 @@ export class AuthService {
     const user = await this.usersRepository.findByEmail(email);
     
     if (!user) {
-      return {
-        success: false,
-        errors: [{ field: 'email', message: 'Email not found' }],
-      };
+      throw new BadRequestException({ errorsMessages: [{ field: 'user', message: 'User was not found' }] });
     }
 
     if (user.isEmailConfirmed) {
-      return {
-        success: false,
-        errors: [{ field: 'email', message: 'Email already confirmed' }],
-      };
+      throw new BadRequestException({ errorsMessages: [{ field: 'user', message: 'Email already confirmed' }] });
     }
 
     try {
