@@ -1,4 +1,4 @@
-import { IsString, IsUrl, Length, Matches } from 'class-validator';
+import { IsString, Length, Matches } from 'class-validator';
 import { CreateBlogDto } from '../../dto/create-blog.dto';
 import { Trim } from '../../../../../core/decorators/transform/trim';
 

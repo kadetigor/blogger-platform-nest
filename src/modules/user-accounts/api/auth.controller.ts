@@ -10,7 +10,6 @@ import {
   BadRequestException,
   UnauthorizedException,
   Res,
-  Put,
 } from '@nestjs/common';
 import { AuthService } from '../application/auth.service';
 import {
@@ -22,10 +21,15 @@ import {
 import { JwtAuthGuard } from '../guards/bearer/jwt.auth-guard';
 import { Response } from 'express';
 import { PasswordRecoveryDto } from './input-dto/password-recovery-dto';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { ConfigService } from '@nestjs/config';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private configService: ConfigService,
+  ) {}
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -46,7 +50,7 @@ export class AuthController {
       httpOnly: true,
       secure: true,
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000  // 7 days
+      maxAge: Number(this.configService.get('REFRESH_TIME')) || 24 * 60 * 60 * 1000 // 1 day
     });
 
     return { accessToken: result.accessToken };
@@ -54,6 +58,8 @@ export class AuthController {
 
   @Post('registration')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 5, ttl: 10000 } }) // 5 requests per 10 seconds
   async registration(@Body() registrationDto: RegistrationInputDto) {
     const result = await this.authService.registerUser(registrationDto);
 
@@ -66,6 +72,8 @@ export class AuthController {
 
   @Post('registration-confirmation')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 5, ttl: 10000 } }) // 5 requests per 10 seconds
   async confirmRegistration(
     @Body() confirmationDto: RegistrationConfirmationInputDto,
   ) {
@@ -82,6 +90,8 @@ export class AuthController {
 
   @Post('registration-email-resending')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 5, ttl: 10000 } }) // 5 requests per 10 seconds
   async resendRegistrationEmail(
     @Body() resendDto: RegistrationEmailResendingInputDto,
   ) {
@@ -106,16 +116,20 @@ export class AuthController {
     };
   }
 
-  @Put('password-recovery')
+  @Post('password-recovery')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 5, ttl: 10000 } }) // 5 requests per 10 seconds
   async passwordRecoveryEmail(
     @Body() email: string,
   ): Promise<void> {
     return await this.authService.sendPasswordRecoveryEmail(email)
   }
 
-  @Put('new-password')
+  @Post('new-password')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 5, ttl: 10000 } }) // 5 requests per 10 seconds
   async confirmPasswordRecovery(
     @Body() passwordRecoveryDto: PasswordRecoveryDto
   ): Promise<void> {

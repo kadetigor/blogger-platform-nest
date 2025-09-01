@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Inject, Param, Put, Req } from "@nestjs/common";
+import { Body, Controller, Delete, ForbiddenException, Get, HttpCode, HttpStatus, Inject, Param, Put, Req } from "@nestjs/common";
 import { LikeStatusUpdateDto } from "../dto/update-comment-like.dto";
 import { UpdateCommentDto } from "../dto/update-comment.dto";
 import { CommentViewDto } from "./view-dto.ts/comment.view-dto";
@@ -34,7 +34,13 @@ export class CommentsController {
   async updateComment(
     @Param('commentId') commentId: string,
     @Body() dto: UpdateCommentDto,
+    @Req() req: RequestWithUser
   ): Promise<void> {
+    const reqUserId = req.user?.id;
+    const comment = await this.commentsQueryRepository.getByIdOrNotFoundFail(commentId)
+    if (reqUserId != comment.commentatorInfo.userId) {
+      throw new ForbiddenException
+    }
     return await this.commentsService.updateComment(commentId, dto)
   }
 
@@ -42,7 +48,13 @@ export class CommentsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteComment(
     @Param('commentId') commentId: string,
+    @Req() req: RequestWithUser
   ): Promise<void> {
+    const reqUserId = req.user?.id;
+    const comment = await this.commentsQueryRepository.getByIdOrNotFoundFail(commentId)
+    if (reqUserId != comment.commentatorInfo.userId) {
+      throw new ForbiddenException
+    }
     return await this.commentsService.removeComment(commentId)
   }
 

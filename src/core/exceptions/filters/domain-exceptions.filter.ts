@@ -50,11 +50,12 @@ export class DomainHttpExceptionsFilter implements ExceptionFilter {
     requestUrl: string,
   ): ErrorResponseBody {
     return {
-      timestamp: new Date().toISOString(),
-      path: requestUrl,
-      message: exception.message,
-      code: exception.code,
-      extensions: exception.extensions,
+      errorsMessages: [
+        {
+          field: exception.field || 'unknown',
+          message: exception.message
+        }
+      ]
     };
   }
 }

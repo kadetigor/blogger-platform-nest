@@ -8,6 +8,7 @@ import { TestingModule } from './modules/testing/testing.module';
 import { BloggersPlatformModule } from './modules/blogger-platform/blogger-platform.module';
 import { ConfigModule } from '@nestjs/config';
 import { CqrsModule } from '@nestjs/cqrs';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
@@ -15,6 +16,10 @@ import { CqrsModule } from '@nestjs/cqrs';
       isGlobal: true, // Makes the ConfigModule available throughout the app
       envFilePath: '.env', // Specify the path to your .env file
     }),
+    ThrottlerModule.forRoot([{
+      ttl: 1000, // 10 seconds in milliseconds
+      limit: 5, // 5 requests per TTL window
+    }]),
     MongooseModule.forRoot(
       process.env.MONGO_URL || 'mongodb+srv://kadetigor3216:yxqFwxLKJaQKAlqG@mycluster.o5wevkr.mongodb.net/',
     ),

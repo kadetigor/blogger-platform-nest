@@ -58,8 +58,12 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     // Default error response
     response.status(status).json({
-      statusCode: status,
-      message: exception.message,
+      errorsMessages: [
+        {
+          field: 'unknown',
+          message: exception.message
+        }
+      ]
     });
   }
 }

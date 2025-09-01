@@ -1,9 +1,12 @@
 // src/modules/user-accounts/dto/create-user.dto.ts
-import { IsEmail, IsString, Length } from 'class-validator';
+import { IsEmail, IsString, Length, Matches } from 'class-validator';
 
 export class CreateUserDto {
   @IsString()
   @Length(3, 10)
+  @Matches(/^[a-zA-Z0-9_-]*$/, {
+    message: 'Login can only contain letters, numbers, underscores, and hyphens'
+  })
   login: string;
 
   @IsString()

@@ -1,5 +1,4 @@
-// src/modules/user-accounts/application/auth.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersRepository } from '../infrastructure/users.repository';
 import { UsersService } from './users.service';
@@ -8,7 +7,6 @@ import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { v4 as uuid } from 'uuid';
-import { ref } from 'process';
 import { PasswordRecoveryDto } from '../api/input-dto/password-recovery-dto';
 
 export interface AuthResult {
@@ -65,8 +63,8 @@ export class AuthService {
       email: user.email 
     };
 
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '10m' });
-    const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '5m' });
+    const refreshToken = this.jwtService.sign(payload, { expiresIn: '1d' });
     
     return {
       success: true,
@@ -88,10 +86,7 @@ export class AuthService {
     // Check if user with same email exists
     const existingUserByEmail = await this.usersRepository.findByEmail(dto.email);
     if (existingUserByEmail) {
-      return {
-        success: false,
-        errors: [{ field: 'email', message: 'Email already exists' }],
-      };
+      throw new BadRequestException({ errorsMessages: [{ field: 'email', message: 'Email already exists' }] });
     }
 
     try {
@@ -189,13 +184,14 @@ export class AuthService {
 
   async sendPasswordRecoveryEmail(email: string): Promise<void> {
     const user = await this.usersRepository.findByLoginOrEmail(email);
-
-    if(!user) {
-      throw new NotFoundException('user not found')
+    
+    if (!user) {
+      return;
     }
+
     const newConfirmationCode = uuid();
 
-    await this.usersRepository.updateConfirmationCode(user.id, newConfirmationCode);
+    await this.usersRepository.updateConfirmationCode(user?.id, newConfirmationCode);
 
     try {
       const updatedUser = { ...user, confirmationCode: newConfirmationCode }
@@ -212,7 +208,7 @@ export class AuthService {
     const user = await this.usersRepository.findByConfirmationCode(code)
 
     if(!user) {
-      throw new NotFoundException('user not found')
+      throw new BadRequestException('User with this code was not found');
     }
 
     const newPasswordHash = await bcrypt.hash(newPassword, 10)
