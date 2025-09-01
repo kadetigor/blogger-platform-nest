@@ -32,8 +32,6 @@ import { ValidationExceptionFilter } from 'src/core/filters/validation-exception
 import { GetCommentsQueryParams } from '../../comments/api/input-dto.ts/get-comments-query-params.input-dto';
 import { UpdateCommentDto } from '../../comments/dto/update-comment.dto';
 import { BasicAuthGuard } from 'src/modules/user-accounts/guards/basic/basic.auth-guard';
-import { CommentsLikesExternalRepository } from '../../comments/infrastructure/external/comments-likes.external-repository';
-import { UserViewDto } from 'src/modules/user-accounts/api/view-dto/users.view-dto';
 import { PostLikeRepository } from '../infrastructure/posts-likes.repository';
 import { LikeStatusUpdateDto } from './input-dto/like-status-update-dto';
 
