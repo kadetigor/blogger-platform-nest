@@ -1,5 +1,6 @@
-import { likeStatus } from "./create-comment-like.dto";
+import { IsEnum } from "class-validator";
 
 export class LikeStatusUpdateDto {
-    likeStatus: likeStatus
+    @IsEnum(['None', 'Like', 'Dislike'])
+    likeStatus: string;
 }

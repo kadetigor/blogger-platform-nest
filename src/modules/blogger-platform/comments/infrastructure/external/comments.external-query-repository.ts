@@ -4,18 +4,34 @@ import { Comment, CommentDocument, CommentModelType } from "../../domain/comment
 import { GetCommentsQueryParams } from "../../api/input-dto.ts/get-comments-query-params.input-dto";
 import { CommentViewDto } from "../../api/view-dto.ts/comment.view-dto";
 import { PaginatedViewDto } from "src/core/dto/base.paginated.view-dto";
-import { FilterQuery } from "mongoose";
+import { FilterQuery, isValidObjectId } from "mongoose";
 import { CommentsLikesRepository } from "../comments-likes.repository";
+import { Post, PostModelType } from "../../../posts/domain/post.entity";
 
 @Injectable()
 export class CommentsExternalQueryRepository {
 
   constructor(
     @InjectModel(Comment.name) private CommentModel: CommentModelType,
+    @InjectModel(Post.name) private PostModel: PostModelType,
     private commentsLikesRepository: CommentsLikesRepository,
   ) { };
 
   async getCommentsForPost(postId: string, userId: string, query: GetCommentsQueryParams): Promise<PaginatedViewDto<CommentViewDto[]>> {
+    // Check if postId is valid and if post exists
+    if (!isValidObjectId(postId)) {
+      throw new NotFoundException('post not found');
+    }
+    
+    const post = await this.PostModel.findOne({
+      _id: postId,
+      deletedAt: null,
+    });
+    
+    if (!post) {
+      throw new NotFoundException('post not found');
+    }
+    
     const filter: FilterQuery<Comment> = {
           postId: postId,
           deletedAt: null,

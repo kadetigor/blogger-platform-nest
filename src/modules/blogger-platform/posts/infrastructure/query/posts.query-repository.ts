@@ -35,7 +35,7 @@ export class PostsQueryRepository {
 
   async getAllPosts(
     query: GetPostsQueryParams,
-    userId: string  // ADD THIS PARAMETER
+    userId: string,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
     const filter: FilterQuery<Post> = {
       deletedAt: null,

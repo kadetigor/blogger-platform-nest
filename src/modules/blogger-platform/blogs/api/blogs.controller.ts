@@ -26,6 +26,7 @@ import { GetPostsQueryParams } from '../../posts/api/input-dto/get-posts-query-p
 import { PostsExternalService } from '../../posts/application/posts.external-service';
 import { CreatePostDto } from '../../posts/dto/create-post.dto';
 import { BasicAuthGuard } from 'src/modules/user-accounts/guards/basic/basic.auth-guard';
+import { JwtOptionalAuthGuard } from 'src/modules/user-accounts/guards/bearer/jwt.optional-auth-guard';
 import { RequestWithUser } from 'types/custom-request.interface';
 
 @Controller('blogs')
@@ -78,6 +79,7 @@ export class BlogsController {
   }
 
   @Get(':id/posts')
+  @UseGuards(JwtOptionalAuthGuard)
   async getPostsByBlog(
     @Param('id') blogId: string,
     @Query() query: GetPostsQueryParams,

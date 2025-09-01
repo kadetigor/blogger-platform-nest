@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, ForbiddenException, Get, HttpCode, HttpStatus, Inject, Param, Put, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, ForbiddenException, Get, HttpCode, HttpStatus, Inject, Param, Put, Req, UseFilters, UseGuards } from "@nestjs/common";
 import { LikeStatusUpdateDto } from "../dto/update-comment-like.dto";
 import { UpdateCommentDto } from "../dto/update-comment.dto";
 import { CommentViewDto } from "./view-dto.ts/comment.view-dto";
@@ -7,6 +7,8 @@ import { RequestWithUser } from "types/custom-request.interface";
 import { CommentsLikesRepository } from "../infrastructure/comments-likes.repository";
 import { CommentsService } from "../application/comments.service";
 import { JwtAuthGuard } from "src/modules/user-accounts/guards/bearer/jwt.auth-guard";
+import { JwtOptionalAuthGuard } from "src/modules/user-accounts/guards/bearer/jwt.optional-auth-guard";
+import { ValidationExceptionFilter } from "src/core/filters/validation-exception.filter";
 
 @Controller('comments')
 export class CommentsController {
@@ -21,12 +23,13 @@ export class CommentsController {
   @Put(':commentId/like-status')
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(JwtAuthGuard)
+  @UseFilters(ValidationExceptionFilter)
   async updateLikeStatus(
     @Param('commentId') commentId: string,
     @Body() dto: LikeStatusUpdateDto,
     @Req() req: RequestWithUser,
   ): Promise<void> {
-    const status = dto.likeStatus
+    const status = dto.likeStatus as "Like" | "Dislike" | "None"
     const userId = req.user?.id as string;
     return await this.commentsService.updateLikeInfo(commentId, userId, status)
   }
@@ -63,6 +66,7 @@ export class CommentsController {
   }
 
   @Get(':id')
+  @UseGuards(JwtOptionalAuthGuard)
   async findOneComment(
     @Param('id') id: string,
     @Req() req: RequestWithUser

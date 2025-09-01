@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, Model } from "mongoose";
 
-@Schema()
+@Schema({ timestamps: true })
 export class PostLike {
     
     @Prop({ type: String, required: true })
@@ -12,6 +12,12 @@ export class PostLike {
 
     @Prop({ type: String, enum: ["Like", "Dislike"], required: true })
     status: string;
+
+    @Prop ({ type: Date, nullable: false })
+    addedAt: Date;
+
+    @Prop({ type: String, required: true})
+    login: string;
 
     createdAt: Date;
 

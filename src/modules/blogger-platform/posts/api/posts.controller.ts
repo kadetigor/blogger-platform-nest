@@ -60,6 +60,7 @@ export class PostsController {
   }
 
   @Get(':postId/comments')
+  @UseGuards(JwtOptionalAuthGuard)
   async getCommentsForPost(
     @Param('postId') postId: string,
     @Query() query: GetCommentsQueryParams,
@@ -87,20 +88,22 @@ export class PostsController {
   @Put(':postId/like-status')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
+  @UseFilters(ValidationExceptionFilter)
   async updatePostLikeStatus(
     @Param('postId') postId: string,
     @Body() likeStatus: LikeStatusUpdateDto,
     @Req() req: RequestWithUser
-  ) {
+  ): Promise<void> {
     const userId = req.user?.id
+    const userLogin = req.user?.login as string
     
     if(!await this.postsQueryRepository.getPostById(postId)){
       throw new NotFoundException('post does not exist')
     }
 
     //return this.commentsLikesExternalRepository.setLikeStatus(postId, userId!, likeStatus)
-
-    return this.postsLikesRepository.setLikeStatus(postId, userId!, likeStatus.likeStatus)
+    await this.postsLikesRepository.setLikeStatus(postId, userId!, likeStatus.likeStatus, userLogin)
+    return
   }
 
   @Get()
@@ -120,6 +123,7 @@ export class PostsController {
   }
 
   @Get(':id')
+  @UseGuards(JwtOptionalAuthGuard)
   async findOne(
     @Param('id') id: string,
     @Req() req: RequestWithUser,

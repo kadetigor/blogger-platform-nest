@@ -8,31 +8,41 @@ export class PostLikeRepository {
 
     constructor(@InjectModel(PostLike.name) private PostLikeModel: PostLikeModelType){}
 
-    async setLikeStatus(postId: string, userId: string, status: string):Promise<void> {
-        if (status === "None"){
+    async setLikeStatus(postId: string, userId: string, status: string, userLogin: string): Promise<void> {
+        if (status === "None") {
             await this.PostLikeModel.deleteOne({ postId, userId })
             return;
         }
 
-        await this.PostLikeModel.findOneAndUpdate(
+        const result = await this.PostLikeModel.findOneAndUpdate(
             { postId, userId },
-
             {
                 $set: {
                     status,
-                    createdAt: new Date()
+                    addedAt: new Date(),
+                    login: userLogin  // ← YOU'RE MISSING THIS!
                 }
             },
-            { upsert: true }
+            { upsert: true, new: true }  // Also add 'new: true' to see the result
         );
     }
 
     async getUserLikeStatus(postId: string, userId: string): Promise<"Like" | "Dislike" | "None"> {
+        console.log('=== getUserLikeStatus ===');
+        console.log('Looking for like with postId:', postId, 'userId:', userId);
+        console.log('Type of postId:', typeof postId);
+        console.log('Type of userId:', typeof userId);
+
         const like = await this.PostLikeModel.findOne({ postId, userId });
 
+        console.log('Found like:', like);
+
         if (!like) {
+            console.log('No like found, returning None');
             return "None";
         }
+
+        console.log('Returning status:', like.status);
     
         return like.status as "Like" | "Dislike";
     }
@@ -62,50 +72,21 @@ export class PostLikeRepository {
                     status: "Like"
                 }
             },
-            // Sort by newest first
+            // Sort by newest first (using addedAt field)
             {
-                $sort: { createdAt: -1 }
+                $sort: { addedAt: -1 }
             },
             // Limit to 3
             {
                 $limit: 3
             },
-            // Join with users collection
-            {
-                $lookup: {
-                    from: 'users',  // MongoDB collection name (usually lowercase plural)
-                    let: { userId: '$userId' },
-                    pipeline: [
-                        {
-                            $match: {
-                                $expr: {
-                                    $eq: ['$_id', { $toObjectId: '$$userId' }]
-                                }
-                            }
-                        },
-                        {
-                            $project: {
-                                login: 1
-                            }
-                        }
-                    ],
-                    as: 'user'
-                }
-            },
-            // Unwind the user array (convert from array to object)
-            {
-                $unwind: {
-                    path: '$user',
-                    preserveNullAndEmptyArrays: true
-                }
-            },
-            // Final projection
+            // Project the final result directly since we already have login in the document
             {
                 $project: {
                     _id: 0,
-                    addedAt: '$createdAt',
+                    addedAt: '$addedAt',
                     userId: '$userId',
-                    login: { $ifNull: ['$user.login', 'Unknown'] }
+                    login: '$login'
                 }
             }
         ];
