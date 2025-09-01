@@ -5,7 +5,6 @@ import { CommentsQueryRepository } from "./infrastructure/query/comments.query-r
 import { CommentsRepository } from "./infrastructure/comments.repository";
 import { CommentsService } from "./application/comments.service";
 import { CommentsExtertalService } from "./application/comments.external-service";
-import { PostsModule } from "../posts/posts.module";
 import { CommentsExternalQueryRepository } from "./infrastructure/external/comments.external-query-repository";
 import { MongooseModule } from "@nestjs/mongoose";
 import { Comment, CommentSchema } from "./domain/comment.entity";

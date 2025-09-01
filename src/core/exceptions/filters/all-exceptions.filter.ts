@@ -35,20 +35,18 @@ export class AllHttpExceptionsFilter implements ExceptionFilter {
 
     if (isProduction) {
       return {
-        timestamp: new Date().toISOString(),
-        path: null,
-        message: 'Some error occurred',
-        extensions: [],
-        code: DomainExceptionCode.InternalServerError,
+        errorsMessages: [{
+          field: "string",
+          message: "string"
+        }]
       };
     }
 
     return {
-      timestamp: new Date().toISOString(),
-      path: requestUrl,
-      message,
-      extensions: [],
-      code: DomainExceptionCode.InternalServerError,
+      errorsMessages: [{
+          field: "string",
+          message: "string"
+        }]
     };
   }
 }

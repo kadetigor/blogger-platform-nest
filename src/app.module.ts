@@ -17,7 +17,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
       envFilePath: '.env', // Specify the path to your .env file
     }),
     ThrottlerModule.forRoot([{
-      ttl: 1000, // 10 seconds in milliseconds
+      ttl: 10000, // 10 seconds in milliseconds
       limit: 5, // 5 requests per TTL window
     }]),
     MongooseModule.forRoot(

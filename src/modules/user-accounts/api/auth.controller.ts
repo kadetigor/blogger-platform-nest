@@ -23,6 +23,7 @@ import { Response } from 'express';
 import { PasswordRecoveryDto } from './input-dto/password-recovery-dto';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { ConfigService } from '@nestjs/config';
+import { PasswordRecoveryRequestDto } from './input-dto/password-recovery-request-dto';
 
 @Controller('auth')
 export class AuthController {
@@ -121,9 +122,9 @@ export class AuthController {
   @UseGuards(ThrottlerGuard)
   @Throttle({ default: { limit: 5, ttl: 10000 } }) // 5 requests per 10 seconds
   async passwordRecoveryEmail(
-    @Body() email: string,
+    @Body() PasswordRecoveryRequestDto,
   ): Promise<void> {
-    return await this.authService.sendPasswordRecoveryEmail(email)
+    return await this.authService.sendPasswordRecoveryEmail(PasswordRecoveryRequestDto)
   }
 
   @Post('new-password')

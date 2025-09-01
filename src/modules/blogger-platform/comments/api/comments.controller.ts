@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, ForbiddenException, Get, HttpCode, HttpStatus, Inject, Param, Put, Req } from "@nestjs/common";
+import { Body, Controller, Delete, ForbiddenException, Get, HttpCode, HttpStatus, Inject, Param, Put, Req, UseGuards } from "@nestjs/common";
 import { LikeStatusUpdateDto } from "../dto/update-comment-like.dto";
 import { UpdateCommentDto } from "../dto/update-comment.dto";
 import { CommentViewDto } from "./view-dto.ts/comment.view-dto";
@@ -6,6 +6,7 @@ import { CommentsQueryRepository } from "../infrastructure/query/comments.query-
 import { RequestWithUser } from "types/custom-request.interface";
 import { CommentsLikesRepository } from "../infrastructure/comments-likes.repository";
 import { CommentsService } from "../application/comments.service";
+import { JwtAuthGuard } from "src/modules/user-accounts/guards/bearer/jwt.auth-guard";
 
 @Controller('comments')
 export class CommentsController {
@@ -19,6 +20,7 @@ export class CommentsController {
 
   @Put(':commentId/like-status')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(JwtAuthGuard)
   async updateLikeStatus(
     @Param('commentId') commentId: string,
     @Body() dto: LikeStatusUpdateDto,
@@ -31,6 +33,7 @@ export class CommentsController {
 
   @Put(':commentId')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(JwtAuthGuard)
   async updateComment(
     @Param('commentId') commentId: string,
     @Body() dto: UpdateCommentDto,
@@ -46,6 +49,7 @@ export class CommentsController {
 
   @Delete(':commentId')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(JwtAuthGuard)
   async deleteComment(
     @Param('commentId') commentId: string,
     @Req() req: RequestWithUser

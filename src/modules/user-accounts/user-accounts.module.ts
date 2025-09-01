@@ -28,7 +28,7 @@ import { CryptoService } from './application/crypto.service';
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('AC_SECRET') || 'access-token-secret',
         signOptions: { 
-          expiresIn: `${configService.get<string>('AC_TIME')}m` ? `${configService.get<string>('AC_TIME')}s` : '60s'
+          expiresIn: configService.get<string>('AC_TIME') ? `${configService.get<string>('AC_TIME')}m` : '5m'
         },
       }),
     }),
