@@ -1,7 +1,7 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { WithId } from "mongodb";
 import { JwtService } from '@nestjs/jwt';
 import { UsersRepository } from '../infrastructure/users.repository';
-import { UsersService } from './users.service';
 import { EmailService } from '../../notifications/email.service';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
@@ -9,6 +9,9 @@ import { CreateUserDto } from '../dto/create-user.dto';
 import { v4 as uuid } from 'uuid';
 import { PasswordRecoveryDto } from '../api/input-dto/password-recovery-dto';
 import { ConfigService } from '@nestjs/config';
+import { RefreshTokenSession, RefreshTokenSessionModelType,  } from '../domain/refresh-token.entity';
+import { RefreshTokenSessionsRepository } from '../infrastructure/refresh-token-sessions.repository';
+import { SecurityDevicesService } from './security-device.service';
 
 export interface AuthResult {
   success: boolean;
@@ -22,14 +25,27 @@ export interface OperationResult {
   errors?: Array<{ field: string; message: string }>;
 }
 
+export interface SessionValidationResult {
+    isValid: boolean;
+    session?: WithId<RefreshTokenSession>;
+    userId?: string;
+    error?: 'NOT_FOUND' | 'EXPIRED' | 'REVOKED';
+}
+
+export interface RefreshTokensResult {
+    accessToken: string;
+    refreshToken: string;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
     private usersRepository: UsersRepository,
-    private usersService: UsersService,
     private jwtService: JwtService,
     private emailService: EmailService,
     private configService: ConfigService,
+    private refreshTokensSessionsRepository: RefreshTokenSessionsRepository,
+    private securityDevicesService: SecurityDevicesService,
   ) {}
 
   async validateUser(loginOrEmail: string, password: string): Promise<any> {
@@ -65,8 +81,8 @@ export class AuthService {
       email: user.email 
     };
 
-    const accessToken = this.jwtService.sign(payload, { expiresIn: `${this.configService.get<string>('AC_TIME')}m` });
-    const refreshToken = this.jwtService.sign(payload, { expiresIn: `${this.configService.get<string>('REFRESH_TIME')}d` });
+    const accessToken = this.jwtService.sign(payload, { expiresIn: `${this.configService.get<string>('AC_TIME')}s` });
+    const refreshToken = this.jwtService.sign(payload, { expiresIn: `${this.configService.get<string>('REFRESH_TIME')}s` });
     
     return {
       success: true,
@@ -200,5 +216,119 @@ export class AuthService {
     await this.usersRepository.updatePassword(user.id, newPasswordHash)
 
     await this.usersRepository.clearRecoveryCode(user.id);
+  }
+
+  async refreshTokens(oldRefreshToken: string): Promise<{ accessToken: string, refreshToken: string } | null> {
+    try {
+      // 1. Verify old refresh token
+      const payload = await this.jwtService.verify(oldRefreshToken);
+      if (!payload) {
+        throw new UnauthorizedException
+      }
+
+      // 2. Validate session in DB
+      const sessionValidation = await this.validateRefreshSession(payload.tokenId);
+      if (!sessionValidation.isValid) {
+        throw new UnauthorizedException
+      }
+
+      // 3. Revoke old session
+      await this.invalidateRefreshSession(payload.tokenId);
+
+      // 4. Create new session with same deviceId
+      const newTokenId = await this.createRefreshSession(payload.userId, payload.deviceId);
+
+      // 5. Create new tokens
+      const user = await this.usersRepository.findById(payload.userId);
+
+      if (!user) {
+        throw new UnauthorizedException
+      }
+
+      const accessToken = await this.jwtService.signAsync(
+        {
+          sub: payload.userId,      // 'sub' is standard JWT claim for subject
+          username: user.login,
+        },
+        {
+          secret: this.configService.get('AC_SECRET'),
+          expiresIn: this.configService.get('AC_TIME'),
+        }
+      );
+      const refreshToken = await this.jwtService.signAsync(
+        {
+          sub: payload.userId,
+          deviceId: payload.deviceId,
+          tokenId: newTokenId,       // for session tracking
+        },
+        {
+          secret: this.configService.get('REFRESH_SECRET'),
+          expiresIn: this.configService.get('REFRESH_TIME'),
+          jwtid: newTokenId,        // JWT ID claim for tracking
+        }
+      );
+
+      // 6. Update device activity
+      await this.securityDevicesService.updateDeviceActivity(payload.deviceId);
+
+      return { accessToken, refreshToken }
+    } catch (error) {
+      console.log('Refresh tokens failed:', error);
+      throw new UnauthorizedException
+    }
+  }
+
+  async validateRefreshSession(tokenId: string): Promise<SessionValidationResult> {
+    const session = await this.refreshTokensSessionsRepository.findSessionByTokenId(tokenId);
+    
+    if (!session) {
+      return { isValid: false, error: 'NOT_FOUND' };
+    }
+    
+    if (session.isRevoked) {
+      return { isValid: false, error: 'REVOKED' };
+    }
+    
+    if (session.expiresAt < new Date()) {
+      return { isValid: false, error: 'EXPIRED' };
+    }
+    
+    return { isValid: true };
+  }
+
+  async createRefreshSession(userId: string, deviceId: string): Promise<string> {
+
+    const tokenId = uuid()
+    const refreshTime = this.configService.get('REFRESH_TIME')
+    const dto = {
+      userId,
+      deviceId,
+      tokenId,
+    }
+
+    await this.refreshTokensSessionsRepository.createSession(dto, refreshTime)
+
+    return tokenId
+  }
+
+  async invalidateRefreshSession(tokenId: string): Promise<boolean> {
+    return await this.refreshTokensSessionsRepository.invalidateSession(tokenId);
+  }
+
+  async logout(userId: string, deviceId: string, tokenId: string): Promise<void> {
+  try {
+    // Handle ALL cleanup in one place
+    await Promise.allSettled([
+      this.invalidateRefreshSession(tokenId),
+      this.securityDevicesService.deleteDevice(userId, deviceId),
+    ]);
+  } catch (error) {
+    // Log but don't throw - logout should always succeed
+    console.log('Logout cleanup failed', { userId, deviceId, error });
+  }
+}
+
+  async extractDeviceIdFromToken(refreshToken: string): Promise<string> {
+    return "dfdf"
   }
 }

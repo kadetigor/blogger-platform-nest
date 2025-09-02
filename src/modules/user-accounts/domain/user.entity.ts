@@ -1,10 +1,8 @@
-// src/modules/user-accounts/domain/user.entity.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Model } from 'mongoose';
 import { CreateUserDomainDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/create-user.dto';
 import { Name, NameSchema } from './name.schema';
-import { randomUUID } from 'crypto';
 
 @Schema({ timestamps: true })
 export class User {
