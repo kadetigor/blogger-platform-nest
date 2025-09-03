@@ -281,6 +281,7 @@ export class AuthService {
         {
           userId: payload.userId,      // 'sub' is standard JWT claim for subject
           login: user.login,
+          email: user.email,
         },
         {
           secret: this.configService.get('AC_SECRET'),
@@ -315,21 +316,26 @@ export class AuthService {
   }
 
   async validateRefreshSession(tokenId: string): Promise<SessionValidationResult> {
-    const session = await this.refreshTokensSessionsRepository.findSessionByTokenId(tokenId);
-    
-    if (!session) {
+    try {
+      const session = await this.refreshTokensSessionsRepository.findSessionByTokenId(tokenId);
+
+      if (!session) {
+        return { isValid: false, error: 'NOT_FOUND' };
+      }
+
+      if (session.isRevoked) {
+        return { isValid: false, error: 'REVOKED' };
+      }
+
+      if (session.expiresAt < new Date()) {
+        return { isValid: false, error: 'EXPIRED' };
+      }
+
+      return { isValid: true, session, userId: session.userId };
+    } catch (error) {
+      console.log('Session validation failed:', error);
       return { isValid: false, error: 'NOT_FOUND' };
     }
-    
-    if (session.isRevoked) {
-      return { isValid: false, error: 'REVOKED' };
-    }
-    
-    if (session.expiresAt < new Date()) {
-      return { isValid: false, error: 'EXPIRED' };
-    }
-    
-    return { isValid: true };
   }
 
   async createRefreshSession(userId: string, deviceId: string): Promise<string> {

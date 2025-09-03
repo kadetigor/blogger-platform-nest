@@ -58,7 +58,7 @@ export class RefreshTokenStrategy extends PassportStrategy(
       payload.tokenId
     );
     
-    if (!sessionValid) {
+    if (!sessionValid.isValid) {
       throw new UnauthorizedException('Session invalidated');
     }
     

@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { ForbiddenException, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { SecurityDevicesRepository } from "../infrastructure/security-devices.repository";
 import { SecurityDevice, SecurityDeviceDocument, SecurityDeviceModelType } from "../domain/security-devices.entity";
 import { ConfigService } from "@nestjs/config";
@@ -94,16 +94,23 @@ export class SecurityDevicesService {
   }
 
   async deleteDevice(userId: string, deviceId: string): Promise<void | boolean> {
+
+    const device = await this.securityDevicesRepository.findByDeviceId(deviceId)
+
+    if (!device) {
+        throw new NotFoundException('device was not found')
+    }
+
     const deviceOwnership = await this.validateDeviceOwnership(userId, deviceId)
 
     if (!deviceOwnership) {
-        return false
+        throw new ForbiddenException('Device Ownership check faild')
     }
     try {
         await this.securityDevicesRepository.deleteByDeviceId(deviceId)
-        return
+        return true
     } catch (e: unknown) {
-        console.log('Device delition faild:', e);
+        throw new InternalServerErrorException('Device delition faild')
     }
   }
 

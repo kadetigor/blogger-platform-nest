@@ -38,6 +38,7 @@ export class SecurityDevicesRepository {
 
     async deleteByDeviceId(deviceId: string): Promise<boolean> {
         const result = await this.SecurityDeviceModel.deleteOne({ "deviceId": deviceId });
+        console.log(result)
         return result.deletedCount > 0;
     }
 

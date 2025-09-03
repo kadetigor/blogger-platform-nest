@@ -38,6 +38,7 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(ThrottlerGuard)
   async login(
     @Body() loginDto: LoginInputDto,
     @Res({ passthrough: true }) res: Response,
