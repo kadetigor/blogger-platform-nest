@@ -20,6 +20,8 @@ import { SecurityDevicesService } from './application/security-device.service';
 import { RefreshTokenSessionsRepository } from './infrastructure/refresh-token-sessions.repository';
 import { RefreshTokenSession, RefreshTokenSessionSchema } from './domain/refresh-token.entity';
 import { SecurityDevice, SecurityDeviceSchema } from './domain/security-devices.entity';
+import { RefreshTokenStrategy } from './guards/refresh/refresh-token.strategy';
+import { SecurityDevicesController } from './api/security-devices.controller';
 
 @Module({
   imports: [
@@ -38,7 +40,7 @@ import { SecurityDevice, SecurityDeviceSchema } from './domain/security-devices.
       }),
     }),
   ],
-  controllers: [UsersController, AuthController],
+  controllers: [UsersController, AuthController, SecurityDevicesController],
   providers: [
     UsersService,
     UsersRepository,
@@ -46,6 +48,7 @@ import { SecurityDevice, SecurityDeviceSchema } from './domain/security-devices.
     AuthQueryRepository,
     AuthService,
     JwtStrategy,
+    RefreshTokenStrategy,
     CryptoService,
     UsersExternalQueryRepository,
     UsersExternalService,

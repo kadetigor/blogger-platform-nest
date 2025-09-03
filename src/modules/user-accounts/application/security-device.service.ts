@@ -26,7 +26,7 @@ export class SecurityDevicesService {
             ip: ip,
             title: userAgent,
             lastActiveDate: new Date(), // Add this if needed
-            expirationDate: new Date(Date.now() + refreshTime * 1000) // If refresh time is in seconds
+            expiresAt: new Date(Date.now() + refreshTime * 1000) // If refresh time is in seconds
         })
 
         await this.securityDevicesRepository.create(device)
@@ -75,14 +75,14 @@ export class SecurityDevicesService {
   }
 
   async checkDevice(userId: string, deviceId: string): Promise<boolean> {
-    const deviceByDeviceId = await this.securityDevicesRepository.findByDeviceId(deviceId)
-    const deviceByUserId = await this.securityDevicesRepository.findByDeviceId(userId)
-
-    if (deviceByDeviceId === deviceByUserId) {
-        return true
+    const device = await this.securityDevicesRepository.findByDeviceId(deviceId)
+    
+    if (!device) {
+        return false
     }
-
-    return false
+    
+    // Check if this device belongs to the specified user
+    return device.userId === userId
   }
 
   async getAllUserDevices(userId: string): Promise<SecurityDevice[] | undefined> {

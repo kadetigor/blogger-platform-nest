@@ -41,7 +41,11 @@ export class AuthController {
   async login(
     @Body() loginDto: LoginInputDto,
     @Res({ passthrough: true }) res: Response,
+    @Request() req,
   ) {
+    const header = req.headers['user-agent'] as string;
+    const ip = req.ip as string;
+
     const result = await this.authService.login(
       loginDto.loginOrEmail,
       loginDto.password,
@@ -50,6 +54,8 @@ export class AuthController {
     if (!result.success) {
       throw new UnauthorizedException();
     }
+
+    await this.securityDevicesService.createDeviceWithId(result.userId, result.deviceId, ip, header)
 
     res.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
@@ -142,6 +148,7 @@ export class AuthController {
   }
 
   @Post('refresh-token')
+  @HttpCode(HttpStatus.OK)
   @UseGuards(RefreshTokenGuard)
   @Throttle({ default: { limit: 5, ttl: 10000 } })
   async refreshTokens(

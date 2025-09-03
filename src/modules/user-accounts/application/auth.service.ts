@@ -17,6 +17,9 @@ export interface AuthResult {
   success: boolean;
   accessToken?: string;
   refreshToken?: string;
+  userId: string;
+  deviceId: string;
+  email:string;
   errors?: Array<{ field: string; message: string }>;
 }
 
@@ -72,22 +75,47 @@ export class AuthService {
     const user = await this.validateUser(loginOrEmail, password);
     
     if (!user) {
-      throw new BadRequestException({ errorsMessages: [{ field: 'user', message: 'User was not found' }] });
+      throw new UnauthorizedException({ errorsMessages: [{ field: 'user', message: 'User was not found' }] });
     };
 
     const payload = { 
-      id: user.userId, 
+      userId: user.userId, 
       login: user.login,
-      email: user.email 
+      email: user.email,
+      deviceId: uuid(),
     };
 
-    const accessToken = this.jwtService.sign(payload, { expiresIn: `${this.configService.get<string>('AC_TIME')}s` });
-    const refreshToken = this.jwtService.sign(payload, { expiresIn: `${this.configService.get<string>('REFRESH_TIME')}s` });
+    const tokenId = await this.createRefreshSession(payload.userId, payload.deviceId)
+
+    const refreshPayload = {
+      ...payload,
+      tokenId: tokenId
+    }
+
+    const accessToken = this.jwtService.sign(
+      payload,
+      {
+        secret: this.configService.get('AC_SECRET'),
+        expiresIn: `${this.configService.get('AC_TIME')}s`
+      }
+    );
+
+    // Line 95 - Refresh token needs REFRESH_SECRET
+    const refreshToken = this.jwtService.sign(
+      refreshPayload,
+      {
+        secret: this.configService.get('REFRESH_SECRET'),
+        expiresIn: `${this.configService.get('REFRESH_TIME')}s`
+      }
+    );
     
     return {
       success: true,
       accessToken: accessToken,
-      refreshToken: refreshToken
+      refreshToken: refreshToken,
+      userId: payload.userId,
+      deviceId: payload.deviceId,
+      email:payload.email,
     };
   }
 
@@ -221,7 +249,11 @@ export class AuthService {
   async refreshTokens(oldRefreshToken: string): Promise<{ accessToken: string, refreshToken: string } | null> {
     try {
       // 1. Verify old refresh token
-      const payload = await this.jwtService.verify(oldRefreshToken);
+      const payload = await this.jwtService.verify(oldRefreshToken,
+        {
+          secret: this.configService.get('REFRESH_SECRET')
+        }
+      );
       if (!payload) {
         throw new UnauthorizedException
       }
@@ -247,23 +279,27 @@ export class AuthService {
 
       const accessToken = await this.jwtService.signAsync(
         {
-          sub: payload.userId,      // 'sub' is standard JWT claim for subject
-          username: user.login,
+          userId: payload.userId,      // 'sub' is standard JWT claim for subject
+          login: user.login,
         },
         {
           secret: this.configService.get('AC_SECRET'),
-          expiresIn: this.configService.get('AC_TIME'),
+          expiresIn: `${this.configService.get('AC_TIME')}s`,
         }
       );
+
+      const secret = this.configService.get('REFRESH_SECRET') || 'refresh-secret-key';
+      console.log('Creating refresh token with secret:', secret);
+
       const refreshToken = await this.jwtService.signAsync(
         {
-          sub: payload.userId,
+          userId: payload.userId,
           deviceId: payload.deviceId,
           tokenId: newTokenId,       // for session tracking
         },
         {
-          secret: this.configService.get('REFRESH_SECRET'),
-          expiresIn: this.configService.get('REFRESH_TIME'),
+          secret: this.configService.get('REFRESH_SECRET') || 'refresh-secret-key',
+          expiresIn: `${this.configService.get('REFRESH_TIME')}s`,
           jwtid: newTokenId,        // JWT ID claim for tracking
         }
       );
@@ -329,6 +365,17 @@ export class AuthService {
 }
 
   async extractDeviceIdFromToken(refreshToken: string): Promise<string> {
-    return "dfdf"
+  try {
+    // Decode without verifying (just to read the payload)
+    const decoded = this.jwtService.decode(refreshToken) as any;
+    
+    if (!decoded || !decoded.deviceId) {
+      throw new UnauthorizedException('Invalid token structure');
+    }
+    
+    return decoded.deviceId;
+  } catch (error) {
+    throw new UnauthorizedException('Failed to extract device ID');
   }
+}
 }

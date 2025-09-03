@@ -1,6 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { Strategy } from 'passport-jwt';
+import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Request } from 'express';
 import { AuthService } from '../../application/auth.service';
 import { ConfigService } from '@nestjs/config';
@@ -18,9 +18,13 @@ export class RefreshTokenStrategy extends PassportStrategy(
 ) {
     super({
       // 1. Extract token from cookies (not Bearer header)
-      jwtFromRequest: (req: Request) => {
-        return req.cookies?.refreshToken;
-      },
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        (req: Request) => {
+          const token = req.cookies?.refreshToken;
+          console.log('Extracted token from cookie:', token);
+          return token;
+        }
+      ]),
       
       // 2. Secret for verifying refresh tokens
       secretOrKey: configService.get('REFRESH_SECRET') || 'refresh-secret-key',
@@ -31,6 +35,7 @@ export class RefreshTokenStrategy extends PassportStrategy(
       // 4. Don't ignore expiration
       ignoreExpiration: false,
     });
+    console.log('JwtRefreshStrategy initialized with secret:', this.configService.get<string>('REFRESH_SECRET'));
   }
 
   // This method is called AFTER JWT verification succeeds
