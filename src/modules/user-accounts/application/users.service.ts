@@ -1,17 +1,14 @@
+// users.service.ts
+
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { User, UserModelType } from '../domain/user.entity';
-import { CreateUserDto } from '../dto/create-user.dto';
+import { User } from '../domain/user.entity';
+import { CreateUserDto, UpdateUserDto } from '../dto/create-user.dto';
 import * as bcrypt from 'bcrypt';
 import { UsersRepository } from '../infrastructure/users.repository';
-import { UpdateUserDto } from '../dto/create-user.dto';
-import { isValidObjectId } from 'mongoose';
 
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectModel(User.name)
-    private UserModel: UserModelType,
     private usersRepository: UsersRepository,
   ) {}
 
@@ -34,38 +31,51 @@ export class UsersService {
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
 
-    const user = this.UserModel.createInstance({
+    // Create the user directly in the repository
+    // This ensures the user has an ID after creation
+    const savedUser = await this.usersRepository.createUser({
       email: dto.email,
       login: dto.login,
       passwordHash: passwordHash,
     });
 
-    await this.usersRepository.save(user);
+    // Now savedUser.id is guaranteed to be non-null
+    if (!savedUser.id) {
+      throw new Error('Failed to create user - no ID returned');
+    }
 
-    return user._id.toString();
+    return savedUser.id;
   }
 
   async updateUser(id: string, dto: UpdateUserDto): Promise<string> {
     const user = await this.usersRepository.findOrNotFoundFail(id);
 
+    // Check if new email is taken (if email is being changed)
+    if (dto.email && dto.email !== user.email) {
+      const existingUser = await this.usersRepository.findByEmail(dto.email);
+      if (existingUser && existingUser.id !== id) {
+        throw new BadRequestException({
+          errorsMessages: [{ field: 'email', message: 'Email already exists' }],
+        });
+      }
+    }
+
     user.update(dto);
+    const updatedUser = await this.usersRepository.save(user);
 
-    await this.usersRepository.save(user);
+    if (!updatedUser.id) {
+      throw new Error('Failed to update user - no ID returned');
+    }
 
-    return user._id.toString();
+    return updatedUser.id;
   }
 
   async deleteUser(id: string): Promise<void> {
-    // First validate the ObjectId format
-    if (!isValidObjectId(id)) {
-      throw new NotFoundException('user not found');
-    }
-
-    // Use findById instead of findOrNotFoundFail to handle both cases
+    // Try to find the user
     const user = await this.usersRepository.findById(id);
 
     if (!user) {
-      throw new NotFoundException('user not found');
+      throw new NotFoundException('User not found');
     }
 
     // If already deleted, just return successfully (idempotent operation)
@@ -75,5 +85,36 @@ export class UsersService {
 
     user.makeDeleted();
     await this.usersRepository.save(user);
+  }
+
+  async changePassword(id: string, newPassword: string): Promise<void> {
+    const user = await this.usersRepository.findOrNotFoundFail(id);
+    
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    
+    const updated = await this.usersRepository.updatePassword(id, passwordHash);
+    if (!updated) {
+      throw new Error('Failed to update password');
+    }
+  }
+
+  async getUserById(id: string): Promise<User> {
+    return this.usersRepository.findOrNotFoundFail(id);
+  }
+
+  async getUserByEmail(email: string): Promise<User | null> {
+    return this.usersRepository.findByEmail(email);
+  }
+
+  async getUserByLogin(login: string): Promise<User | null> {
+    return this.usersRepository.findByLogin(login);
+  }
+
+  async getAllUsers(skip: number = 0, limit: number = 10): Promise<User[]> {
+    return this.usersRepository.findAll(skip, limit);
+  }
+
+  async getUsersCount(): Promise<number> {
+    return this.usersRepository.count();
   }
 }

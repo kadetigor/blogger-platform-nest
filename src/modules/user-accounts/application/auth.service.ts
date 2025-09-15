@@ -1,3 +1,5 @@
+// auth.service.ts
+
 import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { WithId } from "mongodb";
 import { JwtService } from '@nestjs/jwt';
@@ -9,7 +11,7 @@ import { CreateUserDto } from '../dto/create-user.dto';
 import { v4 as uuid } from 'uuid';
 import { PasswordRecoveryDto } from '../api/input-dto/password-recovery-dto';
 import { ConfigService } from '@nestjs/config';
-import { RefreshTokenSession, RefreshTokenSessionModelType,  } from '../domain/refresh-token.entity';
+import { RefreshTokenSession } from '../domain/refresh-token.entity';
 import { RefreshTokenSessionsRepository } from '../infrastructure/refresh-token-sessions.repository';
 import { SecurityDevicesService } from './security-device.service';
 
@@ -19,7 +21,7 @@ export interface AuthResult {
   refreshToken?: string;
   userId: string;
   deviceId: string;
-  email:string;
+  email: string;
   errors?: Array<{ field: string; message: string }>;
 }
 
@@ -64,8 +66,9 @@ export class AuthService {
       return null;
     }
 
+    // CHANGED: Use user.id directly instead of user._id.toString()
     return {
-      userId: user._id.toString(),
+      userId: user.id || user._id?.toString(), // Fallback for compatibility
       login: user.login,
       email: user.email,
     };
@@ -100,7 +103,6 @@ export class AuthService {
       }
     );
 
-    // Line 95 - Refresh token needs REFRESH_SECRET
     const refreshToken = this.jwtService.sign(
       refreshPayload,
       {
@@ -115,7 +117,7 @@ export class AuthService {
       refreshToken: refreshToken,
       userId: payload.userId,
       deviceId: payload.deviceId,
-      email:payload.email,
+      email: payload.email,
     };
   }
 
@@ -217,9 +219,15 @@ export class AuthService {
       return;
     }
 
+    // CHANGED: user.id might be null check
+    if (!user.id) {
+      console.error('User found but has no ID');
+      return;
+    }
+
     const newConfirmationCode = uuid();
 
-    await this.usersRepository.updateConfirmationCode(user?.id, newConfirmationCode);
+    await this.usersRepository.updateConfirmationCode(user.id, newConfirmationCode);
 
     try {
       const updatedUser = { ...user, confirmationCode: newConfirmationCode }
@@ -239,6 +247,11 @@ export class AuthService {
       throw new BadRequestException('User with this code was not found');
     }
 
+    // CHANGED: Check for user.id
+    if (!user.id) {
+      throw new BadRequestException('User found but has no ID');
+    }
+
     const newPasswordHash = await bcrypt.hash(newPassword, 10)
 
     await this.usersRepository.updatePassword(user.id, newPasswordHash)
@@ -255,13 +268,13 @@ export class AuthService {
         }
       );
       if (!payload) {
-        throw new UnauthorizedException
+        throw new UnauthorizedException();
       }
 
       // 2. Validate session in DB
       const sessionValidation = await this.validateRefreshSession(payload.tokenId);
       if (!sessionValidation.isValid) {
-        throw new UnauthorizedException
+        throw new UnauthorizedException();
       }
 
       // 3. Revoke old session
@@ -274,12 +287,12 @@ export class AuthService {
       const user = await this.usersRepository.findById(payload.userId);
 
       if (!user) {
-        throw new UnauthorizedException
+        throw new UnauthorizedException();
       }
 
       const accessToken = await this.jwtService.signAsync(
         {
-          userId: payload.userId,      // 'sub' is standard JWT claim for subject
+          userId: payload.userId,
           login: user.login,
           email: user.email,
         },
@@ -296,12 +309,12 @@ export class AuthService {
         {
           userId: payload.userId,
           deviceId: payload.deviceId,
-          tokenId: newTokenId,       // for session tracking
+          tokenId: newTokenId,
         },
         {
           secret: this.configService.get('REFRESH_SECRET') || 'refresh-secret-key',
           expiresIn: `${this.configService.get('REFRESH_TIME')}s`,
-          jwtid: newTokenId,        // JWT ID claim for tracking
+          jwtid: newTokenId,
         }
       );
 
@@ -311,7 +324,7 @@ export class AuthService {
       return { accessToken, refreshToken }
     } catch (error) {
       console.log('Refresh tokens failed:', error);
-      throw new UnauthorizedException
+      throw new UnauthorizedException();
     }
   }
 
@@ -339,7 +352,6 @@ export class AuthService {
   }
 
   async createRefreshSession(userId: string, deviceId: string): Promise<string> {
-
     const tokenId = uuid()
     const refreshTime = this.configService.get('REFRESH_TIME')
     const dto = {
@@ -358,30 +370,30 @@ export class AuthService {
   }
 
   async logout(userId: string, deviceId: string, tokenId: string): Promise<void> {
-  try {
-    // Handle ALL cleanup in one place
-    await Promise.allSettled([
-      this.invalidateRefreshSession(tokenId),
-      this.securityDevicesService.deleteDevice(userId, deviceId),
-    ]);
-  } catch (error) {
-    // Log but don't throw - logout should always succeed
-    console.log('Logout cleanup failed', { userId, deviceId, error });
+    try {
+      // Handle ALL cleanup in one place
+      await Promise.allSettled([
+        this.invalidateRefreshSession(tokenId),
+        this.securityDevicesService.deleteDevice(userId, deviceId),
+      ]);
+    } catch (error) {
+      // Log but don't throw - logout should always succeed
+      console.log('Logout cleanup failed', { userId, deviceId, error });
+    }
   }
-}
 
   async extractDeviceIdFromToken(refreshToken: string): Promise<string> {
-  try {
-    // Decode without verifying (just to read the payload)
-    const decoded = this.jwtService.decode(refreshToken) as any;
-    
-    if (!decoded || !decoded.deviceId) {
-      throw new UnauthorizedException('Invalid token structure');
+    try {
+      // Decode without verifying (just to read the payload)
+      const decoded = this.jwtService.decode(refreshToken) as any;
+      
+      if (!decoded || !decoded.deviceId) {
+        throw new UnauthorizedException('Invalid token structure');
+      }
+      
+      return decoded.deviceId;
+    } catch (error) {
+      throw new UnauthorizedException('Failed to extract device ID');
     }
-    
-    return decoded.deviceId;
-  } catch (error) {
-    throw new UnauthorizedException('Failed to extract device ID');
   }
-}
 }

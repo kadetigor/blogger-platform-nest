@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserAccountsModule } from './modules/user-accounts/user-accounts.module';
@@ -20,9 +19,6 @@ import { ThrottlerModule } from '@nestjs/throttler';
       ttl: 10000, // 10 seconds in milliseconds
       limit: 5, // 5 requests per TTL window
     }]),
-    MongooseModule.forRoot(
-      process.env.MONGO_URL || 'mongodb+srv://kadetigor3216:yxqFwxLKJaQKAlqG@mycluster.o5wevkr.mongodb.net/',
-    ),
     CqrsModule.forRoot(),
     UserAccountsModule,
     TestingModule,

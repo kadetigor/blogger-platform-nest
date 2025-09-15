@@ -7,8 +7,6 @@ import { UsersRepository } from '../infrastructure/users.repository';
 export class UsersExternalService {
   constructor(
     //инжектирование модели в сервис через DI
-    @InjectModel(User.name)
-    private UserModel: UserModelType,
     private usersRepository: UsersRepository,
   ) {}
 
