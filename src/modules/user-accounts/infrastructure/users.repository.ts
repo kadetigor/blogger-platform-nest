@@ -1,7 +1,7 @@
 // users.repository.ts
 
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { DatabaseService } from 'path-to-your/database.service';
+import { DatabaseService } from '../../database/database.service';
 import { User, UserDocument } from '../domain/user.entity';
 import { CreateUserDomainDto } from '../dto/create-user.dto';
 
@@ -12,9 +12,9 @@ export class UsersRepository {
   // Helper to convert database rows to User entities
   private mapToUser(row: any): User | null {
     if (!row) return null;
-    
+
     return new User(
-      row.id,
+      row.id, // Always non-null from database due to NOT NULL constraint
       row.email,
       row.login,
       row.password_hash,
@@ -28,9 +28,9 @@ export class UsersRepository {
   }
   
   async save(user: UserDocument): Promise<UserDocument> {
-    const id = user.id || user._id?.toString();
-    
-    if (id) {
+    const id = user.id;
+
+    if (id && id !== '') {
       // Update existing user
       const result = await this.databaseService.sql`
         UPDATE users 
@@ -103,7 +103,7 @@ export class UsersRepository {
     }
   }
 
-  async findOrNotFoundFail(id: string): Promise<UserDocument> {
+  async getByIdOrNotFoundFail(id: string): Promise<UserDocument> {
     const user = await this.findById(id);
     if (!user) {
       throw new NotFoundException('User not found');
@@ -161,11 +161,6 @@ export class UsersRepository {
       login: dto.login,
       passwordHash: dto.passwordHash,
     });
-    
-    // Set confirmation code if provided
-    if (dto.confirmationCode) {
-      user.setConfirmationCode(dto.confirmationCode);
-    }
     
     return this.save(user);
   }

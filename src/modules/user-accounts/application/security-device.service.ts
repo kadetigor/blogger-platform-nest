@@ -1,9 +1,9 @@
 import { ForbiddenException, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { SecurityDevicesRepository } from "../infrastructure/security-devices.repository";
-import { SecurityDevice, SecurityDeviceDocument, SecurityDeviceModelType } from "../domain/security-devices.entity";
+import { SecurityDevice } from "../domain/security-devices.entity";
 import { ConfigService } from "@nestjs/config";
-import { Model } from "mongoose";
-import { InjectModel } from "@nestjs/mongoose";
+import { CreateSecuretyDeviceDto } from "../domain/dto/create-security-device.dto";
+import { add } from 'date-fns';
 
 
 @Injectable()
@@ -11,24 +11,22 @@ export class SecurityDevicesService {
 
     constructor(
         private securityDevicesRepository: SecurityDevicesRepository,
-        @InjectModel(SecurityDevice.name) private SecurityDeviceModel: Model<SecurityDeviceDocument>,
         private configService: ConfigService,
     ) {}
 
     async createDeviceWithId(userId: string, deviceId: string, ip: string, header: string): Promise<void> {
         const userAgent = await this.parseUserAgent(header)
         const refreshTime = this.configService.get('REFRESH_TIME') as number
-        
-        // Create the device object with all necessary fields
-        const device = new this.SecurityDeviceModel({
-            deviceId: deviceId,
-            userId: userId,
-            ip: ip,
-            title: userAgent,
-            lastActiveDate: new Date(), // Add this if needed
-            expiresAt: new Date(Date.now() + refreshTime * 1000) // If refresh time is in seconds
-        })
 
+        // Create the device using the static factory method
+        const dto: CreateSecuretyDeviceDto = {
+            userId: userId,
+            deviceId: deviceId,
+            ip: ip,
+            title: userAgent
+        };
+
+        const device = SecurityDevice.createInstance(dto, refreshTime);
         await this.securityDevicesRepository.create(device)
     }
 

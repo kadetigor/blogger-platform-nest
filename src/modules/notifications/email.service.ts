@@ -6,7 +6,17 @@ import { EmailAdapter } from './email.adapter';
 export class EmailService {
   constructor(private emailAdapter: EmailAdapter) {}
 
+  // Store the last confirmation code for tests
+  private static lastConfirmationCode: string | null = null;
+
+  static getLastConfirmationCode(): string | null {
+    return EmailService.lastConfirmationCode;
+  }
+
   async sendConfirmationEmail(email: string, code: string): Promise<void> {
+    // Store code for tests
+    EmailService.lastConfirmationCode = code;
+
     //can add html templates, implement advertising and other logic for mailing...
     await this.emailAdapter.sendEmail(email, "Registration Confirmation", `<h1>Thank for your registration</h1>
  <p>To finish registration please follow the link below:

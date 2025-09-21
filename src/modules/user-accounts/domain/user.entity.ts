@@ -1,8 +1,9 @@
 // user.entity.ts
+import { randomUUID } from 'crypto';
 
 export class User {
   constructor(
-    public id: string | null,
+    public id: string,
     public email: string,
     public login: string,
     public passwordHash: string,
@@ -53,17 +54,36 @@ export class User {
     passwordHash: string;
   }): User {
     return new User(
-      null,
+      '', // Will be set by database with gen_random_uuid()
       dto.email,
       dto.login,
       dto.passwordHash
     );
   }
+
+  // Factory method for registration with confirmation code
+  static createInstanceForRegistration(dto: {
+    email: string;
+    login: string;
+    passwordHash: string;
+  }): User {
+    const user = new User(
+      '', // Will be set by database with gen_random_uuid()
+      dto.email,
+      dto.login,
+      dto.passwordHash
+    );
+
+    // Generate confirmation code for email verification
+    user.setConfirmationCode(randomUUID());
+
+    return user;
+  }
   
   // Helper for backward compatibility with MongoDB _id
   get _id() {
-    return { 
-      toString: () => this.id 
+    return {
+      toString: () => this.id
     };
   }
 }

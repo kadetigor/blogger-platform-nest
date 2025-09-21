@@ -12,7 +12,7 @@ export class UserViewDto {
 
     dto.email = user.email;
     dto.login = user.login;
-    dto.id = user._id.toString();
+    dto.id = user.id;
     dto.createdAt = user.createdAt;
 
     return dto;
@@ -31,7 +31,7 @@ export class MeViewDto extends OmitType(UserViewDto, [
 
     dto.email = user.email;
     dto.login = user.login;
-    dto.userId = user._id.toString();
+    dto.userId = user.id;
 
     return dto;
   }

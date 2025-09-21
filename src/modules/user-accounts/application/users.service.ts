@@ -48,7 +48,7 @@ export class UsersService {
   }
 
   async updateUser(id: string, dto: UpdateUserDto): Promise<string> {
-    const user = await this.usersRepository.findOrNotFoundFail(id);
+    const user = await this.usersRepository.getByIdOrNotFoundFail(id);
 
     // Check if new email is taken (if email is being changed)
     if (dto.email && dto.email !== user.email) {
@@ -88,7 +88,7 @@ export class UsersService {
   }
 
   async changePassword(id: string, newPassword: string): Promise<void> {
-    const user = await this.usersRepository.findOrNotFoundFail(id);
+    const user = await this.usersRepository.getByIdOrNotFoundFail(id);
     
     const passwordHash = await bcrypt.hash(newPassword, 10);
     
@@ -99,7 +99,7 @@ export class UsersService {
   }
 
   async getUserById(id: string): Promise<User> {
-    return this.usersRepository.findOrNotFoundFail(id);
+    return this.usersRepository.getByIdOrNotFoundFail(id);
   }
 
   async getUserByEmail(email: string): Promise<User | null> {

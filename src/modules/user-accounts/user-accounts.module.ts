@@ -4,7 +4,7 @@ import { UsersController } from './api/users.controller';
 import { UsersService } from './application/users.service';
 import { UsersRepository } from './infrastructure/users.repository';
 import { UsersQueryRepository } from './infrastructure/query/users.query-repository';
-import { AuthController } from './api/auth.controller';
+import { AuthController } from './api/auth.controller'
 import { AuthQueryRepository } from './infrastructure/query/auth.query-repository';
 import { UsersExternalQueryRepository } from './infrastructure/external-query/users.external-query-repository';
 import { UsersExternalService } from './application/users.external-service';
@@ -18,10 +18,12 @@ import { SecurityDevicesService } from './application/security-device.service';
 import { RefreshTokenSessionsRepository } from './infrastructure/refresh-token-sessions.repository';
 import { RefreshTokenStrategy } from './guards/refresh/refresh-token.strategy';
 import { SecurityDevicesController } from './api/security-devices.controller';
-import { DatabaseService } from '../database/database.service';
+import { SaUsersController } from './api/sa-users.controller';
+import { DatabaseModule } from '../database/database.module';
 
 @Module({
   imports: [
+    DatabaseModule,
     NotificationsModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -34,7 +36,7 @@ import { DatabaseService } from '../database/database.service';
       }),
     }),
   ],
-  controllers: [UsersController, AuthController, SecurityDevicesController],
+  controllers: [UsersController, AuthController, SecurityDevicesController, SaUsersController],
   providers: [
     UsersService,
     UsersRepository,
@@ -48,8 +50,7 @@ import { DatabaseService } from '../database/database.service';
     UsersExternalService,
     SecurityDevicesRepository,
     SecurityDevicesService,
-    RefreshTokenSessionsRepository,
-    DatabaseService
+    RefreshTokenSessionsRepository
   ],
   exports: [UsersExternalQueryRepository, UsersExternalService, JwtModule],
 })

@@ -10,8 +10,8 @@ import { PostsModule } from '../posts/posts.module';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Blog.name, schema: BlogSchema }]),
-    forwardRef(() => PostsModule),
+    // MongooseModule.forFeature([{ name: Blog.name, schema: BlogSchema }]),
+    // forwardRef(() => PostsModule),
   ],
   controllers: [BlogsController],
   providers: [

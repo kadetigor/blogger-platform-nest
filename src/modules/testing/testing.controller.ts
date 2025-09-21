@@ -1,22 +1,24 @@
 import { Controller, Delete, HttpCode, HttpStatus } from '@nestjs/common';
-import { InjectConnection } from '@nestjs/mongoose';
-import { Connection } from 'mongoose';
+import { DatabaseService } from '../database/database.service';
 
 @Controller('testing')
 export class TestingController {
   constructor(
-    @InjectConnection() private readonly databaseConnection: Connection,
+    private readonly databaseService: DatabaseService,
   ) {}
 
   @Delete('all-data')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteAll() {
-    const collections = await this.databaseConnection.listCollections();
+    // Clear all tables by truncating them
+    await this.databaseService.sql`TRUNCATE TABLE refresh_token_sessions RESTART IDENTITY CASCADE`;
+    await this.databaseService.sql`TRUNCATE TABLE security_devices RESTART IDENTITY CASCADE`;
+    await this.databaseService.sql`TRUNCATE TABLE users RESTART IDENTITY CASCADE`;
 
-    const promises = collections.map((collection) =>
-      this.databaseConnection.collection(collection.name).deleteMany({}),
-    );
-    await Promise.all(promises);
+    // Add any other tables you want to clear for testing
+    // await this.databaseService.sql`TRUNCATE TABLE blogs RESTART IDENTITY CASCADE`;
+    // await this.databaseService.sql`TRUNCATE TABLE posts RESTART IDENTITY CASCADE`;
+    // await this.databaseService.sql`TRUNCATE TABLE comments RESTART IDENTITY CASCADE`;
 
     return {
       status: 'succeeded',
