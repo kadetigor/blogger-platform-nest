@@ -1,5 +1,3 @@
-// users.repository.ts
-
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../../database/database.service';
 import { User, UserDocument } from '../domain/user.entity';
