@@ -22,7 +22,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
     CqrsModule.forRoot(),
     UserAccountsModule,
     TestingModule,
-    // BloggersPlatformModule,
+    BloggersPlatformModule,
     CoreModule,
   ],
   controllers: [AppController],

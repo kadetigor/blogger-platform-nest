@@ -11,7 +11,7 @@ export class BlogViewDto {
   static mapToView(blog: BlogDocument): BlogViewDto {
     const dto = new BlogViewDto();
 
-    dto.id = blog._id.toString();
+    dto.id = blog.id;
     dto.name = blog.name;
     dto.description = blog.description;
     dto.websiteUrl = blog.websiteUrl;

@@ -10,15 +10,15 @@ import { MongooseModule } from "@nestjs/mongoose";
 import { Comment, CommentSchema } from "./domain/comment.entity";
 import { CommentLike, CommentLikeSchema } from "./domain/comment-like.entity";
 import { CommentsLikesExternalRepository } from "./infrastructure/external/comments-likes.external-repository";
-import { Post, PostSchema } from "../posts/domain/post.entity";
+import { PostsModule } from "../posts/posts.module";
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Comment.name, schema: CommentSchema },
-      { name: CommentLike.name, schema: CommentLikeSchema },
-      { name: Post.name, schema: PostSchema }
+      { name: CommentLike.name, schema: CommentLikeSchema }
     ]),
+    PostsModule,
   ],
   controllers: [CommentsController],
   providers: [

@@ -80,12 +80,6 @@ export class User {
     return user;
   }
   
-  // Helper for backward compatibility with MongoDB _id
-  get _id() {
-    return {
-      toString: () => this.id
-    };
-  }
 }
 
 // Type exports for compatibility

@@ -72,7 +72,7 @@ export class AuthService {
 
     // CHANGED: Use user.id directly instead of user._id.toString()
     return {
-      userId: user.id || user._id?.toString(), // Fallback for compatibility
+      userId: user.id || user.id?.toString(), // Fallback for compatibility
       login: user.login,
       email: user.email,
     };

@@ -6,8 +6,7 @@ import { Comment, CommentModelType } from "../domain/comment.entity";
 import { InjectModel } from "@nestjs/mongoose";
 import { CommentViewDto } from "../api/view-dto.ts/comment.view-dto";
 import { UpdateCommentDto } from "../dto/update-comment.dto";
-import { Post, PostModelType } from "../../posts/domain/post.entity";
-import { isValidObjectId } from "mongoose";
+import { PostsExternalQueryRepository } from "../../posts/infrastructure/external-query/posts.external-query-repository";
 
 @Injectable()
 export class CommentsExtertalService {
@@ -16,7 +15,7 @@ export class CommentsExtertalService {
     private commentsRepository: CommentsRepository,
     private commentsLikesRepository: CommentsLikesRepository,
     @InjectModel(Comment.name) private CommentModel: CommentModelType,
-    @InjectModel(Post.name) private PostModel: PostModelType,
+    private postsExternalQueryRepository: PostsExternalQueryRepository,
   ) { }
 
   async createComment(postId: string, dto: CreateCommentInputDto, user: {id: string, login: string}): Promise<CommentViewDto> {
@@ -25,17 +24,10 @@ export class CommentsExtertalService {
         throw new UnauthorizedException('no user found')
       }
 
-    // Check if postId is valid and if post exists
-    if (!isValidObjectId(postId)) {
-      throw new NotFoundException('post not found');
-    }
-    
-    const post = await this.PostModel.findOne({
-      _id: postId,
-      deletedAt: null,
-    });
-    
-    if (!post) {
+    // Check if post exists using the posts service
+    try {
+      await this.postsExternalQueryRepository.getPostById(postId);
+    } catch (error) {
       throw new NotFoundException('post not found');
     }
 

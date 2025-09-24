@@ -1,48 +1,42 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Model } from 'mongoose';
-import { CreatePostInputDto } from '../api/input-dto/post.input-dto';
+import { CreatePostInputDto } from "../api/input-dto/post.input-dto";
 
-@Schema({ timestamps: true })
+
 export class Post {
-  @Prop({ type: String, required: true })
-  title: string;
+  constructor(
+    public id: string,
+    public title: string,
+    public shortDescription: string,
+    public content: string,
+    public blogId?: string,
+    public blogName?: string,
+    public createdAt: Date = new Date(),
+    public updatedAt: Date = new Date(),
+    public deletedAt: Date | null = null
+  ) {}
 
-  @Prop({ type: String, required: true })
-  shortDescription: string;
+  makeDeleted(): void {
+    this.deletedAt = new Date();
+  }
 
-  @Prop({ type: String, required: true })
-  content: string;
+  update(updates: Partial<Post>): void {
+    if (updates.title) this.title = updates.title;
+    if (updates.shortDescription) this.shortDescription = updates.shortDescription;
+    if (updates.content) this.content = updates.content;
+    this.updatedAt = new Date();
+  }
 
-  @Prop({ type: String, required: true })
-  blogId: string;
-
-  @Prop({ type: String, required: true })
-  blogName: string;
-
-  createdAt: Date;
-  updatedAt: Date;
-
-  @Prop({ type: Date, nullable: true })
-  deletedAt: Date | null;
-
-  static createInstance(
-    dto: CreatePostInputDto & { blogName: string },
-  ): PostDocument {
-    const post = new this();
-    post.title = dto.title;
-    post.shortDescription = dto.shortDescription;
-    post.content = dto.content;
-    post.blogId = dto.blogId;
-    post.blogName = dto.blogName;
-
-    return post as PostDocument;
+  static createInstance(dto: CreatePostInputDto, blogId: string, blogName: string): Post {
+    return new Post(
+      '',
+      dto.title,
+      dto.shortDescription,
+      dto.content,
+      blogId,
+      blogName
+    );
   }
 }
 
-export const PostSchema = SchemaFactory.createForClass(Post);
-
-PostSchema.loadClass(Post);
-
-export type PostDocument = HydratedDocument<Post>;
-
-export type PostModelType = Model<PostDocument> & typeof Post;
+// Type exports for compatibility
+export type PostDocument = Post;
+export type PostModelType = typeof Post;

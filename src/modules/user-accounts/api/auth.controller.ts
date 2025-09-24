@@ -191,8 +191,8 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UseGuards(RefreshTokenGuard) // This already verifies the token!
-  @Throttle({ default: { limit: 5, ttl: 10000 } })
+  //@UseGuards(RefreshTokenGuard) // This already verifies the token!
+  //@Throttle({ default: { limit: 5, ttl: 10000 } })
   async logout(
     @Request() req, // RefreshTokenGuard adds user info here
     @Res({ passthrough: true }) res: Response,

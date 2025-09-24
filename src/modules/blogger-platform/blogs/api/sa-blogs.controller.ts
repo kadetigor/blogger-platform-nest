@@ -9,7 +9,6 @@ import {
   Post,
   Put,
   Query,
-  Req,
   UseGuards,
 } from '@nestjs/common';
 import { BlogsQueryRepository } from '../infrastructure/query/blogs.query-repository';
@@ -26,90 +25,94 @@ import { GetPostsQueryParams } from '../../posts/api/input-dto/get-posts-query-p
 import { PostsExternalService } from '../../posts/application/posts.external-service';
 import { CreatePostDto } from '../../posts/dto/create-post.dto';
 import { BasicAuthGuard } from 'src/modules/user-accounts/guards/basic/basic.auth-guard';
-import { JwtOptionalAuthGuard } from 'src/modules/user-accounts/guards/bearer/jwt.optional-auth-guard';
-import { RequestWithUser } from 'types/custom-request.interface';
 
-@Controller('blogs')
-export class BlogsController {
+@Controller('sa/blogs')
+@UseGuards(BasicAuthGuard)
+export class SaBlogsController {
   constructor(
     private blogsQueryRepository: BlogsQueryRepository,
     private blogsService: BlogsService,
     private postsExternalQueryRepository: PostsExternalQueryRepository,
     private postsExternalService: PostsExternalService,
   ) {
-    console.log('BlogsController created');
-  }
-
-  @ApiParam({ name: 'id' })
-  @Get(':id')
-  async getById(@Param('id') id: string): Promise<BlogViewDto> {
-    return this.blogsQueryRepository.getByIdOrNotFoundFail(id);
+    console.log('SaBlogsController created');
   }
 
   @Get()
-  async getAll(
+  async getBlogs(
     @Query() query: GetBlogsQueryParams,
   ): Promise<PaginatedViewDto<BlogViewDto[]>> {
     return this.blogsQueryRepository.getAll(query);
   }
 
   @Post()
-  @UseGuards(BasicAuthGuard)
-  async createBlog(@Body() body: CreateBlogInputDto): Promise<BlogViewDto> {
-    const blogId = await this.blogsService.createBlog(body);
+  async createBlog(@Body() dto: CreateBlogInputDto): Promise<BlogViewDto> {
+    const blogId = await this.blogsService.createBlog(dto);
     return this.blogsQueryRepository.getByIdOrNotFoundFail(blogId);
   }
 
+  @Get(':id')
+  @ApiParam({ name: 'id', required: true })
+  async getBlogById(@Param('id') id: string): Promise<BlogViewDto> {
+    return this.blogsQueryRepository.getByIdOrNotFoundFail(id);
+  }
+
   @Put(':id')
-  @UseGuards(BasicAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiParam({ name: 'id', required: true })
   async updateBlog(
     @Param('id') id: string,
-    @Body() body: UpdateBlogInputDto,
-  ): Promise<BlogViewDto> {
-    const blogId = await this.blogsService.updateBlog(id, body);
-
-    if (!blogId) {
-      throw new Error('blog was not found')
-    }
-
-    return this.blogsQueryRepository.getByIdOrNotFoundFail(blogId.id);
+    @Body() dto: UpdateBlogInputDto,
+  ): Promise<void> {
+    await this.blogsService.updateBlog(id, dto);
   }
 
   @Delete(':id')
-  @UseGuards(BasicAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiParam({ name: 'id', required: true })
   async deleteBlog(@Param('id') id: string): Promise<void> {
     await this.blogsService.deleteBlog(id);
   }
 
-  @Get(':id/posts')
-  @UseGuards(JwtOptionalAuthGuard)
-  async getPostsByBlog(
-    @Param('id') blogId: string,
+  // Posts for specific blog - SA endpoints
+  @Get(':blogId/posts')
+  @ApiParam({ name: 'blogId', required: true })
+  async getPostsForBlog(
+    @Param('blogId') blogId: string,
     @Query() query: GetPostsQueryParams,
-    @Req() req: RequestWithUser,
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
-    const userId = req.user?.id as string
-    await this.blogsQueryRepository.getByIdOrNotFoundFail(blogId);
-    const result = await this.postsExternalQueryRepository.getAllPostsByBlog(
-      query,
-      blogId,
-      userId
-    );
-    return result;
+    return this.postsExternalQueryRepository.getAllPostsByBlog(query, blogId);
   }
 
-  @Post(':id/posts')
-  @UseGuards(BasicAuthGuard)
+  @Post(':blogId/posts')
+  @ApiParam({ name: 'blogId', required: true })
   async createPostForBlog(
-    @Param('id') blogId: string,
-    @Body() body: CreatePostDto,
+    @Param('blogId') blogId: string,
+    @Body() dto: CreatePostDto,
   ): Promise<PostViewDto> {
-    const result = await this.postsExternalService.createPostForBlog(
-      blogId,
-      body,
-    );
-    return result;
+    return this.postsExternalService.createPostForBlog(blogId, dto);
+  }
+
+  @Put(':blogId/posts/:postId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiParam({ name: 'blogId', required: true })
+  @ApiParam({ name: 'postId', required: true })
+  async updatePostForBlog(
+    @Param('blogId') blogId: string,
+    @Param('postId') postId: string,
+    @Body() dto: CreatePostDto,
+  ): Promise<void> {
+    await this.postsExternalService.updatePostForBlog(blogId, postId, dto);
+  }
+
+  @Delete(':blogId/posts/:postId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiParam({ name: 'blogId', required: true })
+  @ApiParam({ name: 'postId', required: true })
+  async deletePostForBlog(
+    @Param('blogId') blogId: string,
+    @Param('postId') postId: string,
+  ): Promise<void> {
+    await this.postsExternalService.deletePostForBlog(blogId, postId);
   }
 }

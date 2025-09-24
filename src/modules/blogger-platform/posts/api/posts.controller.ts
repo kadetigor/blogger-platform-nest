@@ -23,17 +23,18 @@ import { PaginatedViewDto } from 'src/core/dto/base.paginated.view-dto';
 import { PostViewDto } from './view-dto/post.view-dto';
 import { CreatePostInputDto } from './input-dto/post.input-dto';
 import { RequestWithUser } from 'types/custom-request.interface';
-import { CommentsExternalQueryRepository } from '../../comments/infrastructure/external/comments.external-query-repository';
-import { CommentViewDto } from '../../comments/api/view-dto.ts/comment.view-dto';
-import { CommentsExtertalService } from '../../comments/application/comments.external-service';
-import { CreateCommentInputDto } from '../../comments/api/input-dto.ts/create-comment.input-dto';
+// Commented out due to ignoring comments/likes operations as instructed
+// import { CommentsExternalQueryRepository } from '../../comments/infrastructure/external/comments.external-query-repository';
+// import { CommentViewDto } from '../../comments/api/view-dto.ts/comment.view-dto';
+// import { CommentsExtertalService } from '../../comments/application/comments.external-service';
+// import { CreateCommentInputDto } from '../../comments/api/input-dto.ts/create-comment.input-dto';
 import { JwtAuthGuard } from 'src/modules/user-accounts/guards/bearer/jwt.auth-guard';
 import { ValidationExceptionFilter } from 'src/core/filters/validation-exception.filter';
-import { GetCommentsQueryParams } from '../../comments/api/input-dto.ts/get-comments-query-params.input-dto';
-import { UpdateCommentDto } from '../../comments/dto/update-comment.dto';
+// import { GetCommentsQueryParams } from '../../comments/api/input-dto.ts/get-comments-query-params.input-dto';
+// import { UpdateCommentDto } from '../../comments/dto/update-comment.dto';
 import { BasicAuthGuard } from 'src/modules/user-accounts/guards/basic/basic.auth-guard';
-import { PostLikeRepository } from '../infrastructure/posts-likes.repository';
-import { LikeStatusUpdateDto } from './input-dto/like-status-update-dto';
+// import { PostLikeRepository } from '../infrastructure/posts-likes.repository';
+// import { LikeStatusUpdateDto } from './input-dto/like-status-update-dto';
 import { JwtOptionalAuthGuard } from 'src/modules/user-accounts/guards/bearer/jwt.optional-auth-guard';
 
 @Controller('posts')
@@ -41,13 +42,16 @@ export class PostsController {
   constructor(
     private readonly postsService: PostsService,
     private postsQueryRepository: PostsQueryRepository,
-    private commentsExternalQueryRepository: CommentsExternalQueryRepository,
-    private commentsExternalService: CommentsExtertalService,
-    private postsLikesRepository: PostLikeRepository,
+    // Commented out due to ignoring comments/likes operations as instructed
+    // private commentsExternalQueryRepository: CommentsExternalQueryRepository,
+    // private commentsExternalService: CommentsExtertalService,
+    // private postsLikesRepository: PostLikeRepository,
   ) {
     console.log('PostsController created');
   }
 
+  // COMMENTED OUT: Comments and likes operations as instructed to ignore them
+  /*
   @Put(':postId/comments')
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(JwtAuthGuard)
@@ -96,15 +100,16 @@ export class PostsController {
   ): Promise<void> {
     const userId = req.user?.id
     const userLogin = req.user?.login as string
-    
+
     if(!await this.postsQueryRepository.getPostById(postId)){
       throw new NotFoundException('post does not exist')
     }
 
-    //return this.commentsLikesExternalRepository.setLikeStatus(postId, userId!, likeStatus)
+    // return this.commentsLikesExternalRepository.setLikeStatus(postId, userId!, likeStatus)
     await this.postsLikesRepository.setLikeStatus(postId, userId!, likeStatus.likeStatus, userLogin)
     return
   }
+  */
 
   @Get()
   @UseGuards(JwtOptionalAuthGuard)
@@ -113,7 +118,7 @@ export class PostsController {
     @Req() req: RequestWithUser,
   ): Promise < PaginatedViewDto < PostViewDto[] >> {
     const userId = req.user?.id as string;
-    return this.postsQueryRepository.getAllPosts(query, userId);
+    return this.postsQueryRepository.getAllPosts(query);
   }
 
   @Post()
@@ -129,7 +134,7 @@ export class PostsController {
     @Req() req: RequestWithUser,
   ): Promise<PostViewDto> {
     const userId = req.user?.id;
-    return this.postsQueryRepository.getPostById(id, userId);
+    return this.postsQueryRepository.getPostById(id);
   }
 
   @Put(':id')

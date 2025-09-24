@@ -17,7 +17,7 @@ export class PostViewDto {
   };
 
   static mapToView(
-    post: PostDocument, 
+    post: PostDocument,
     likesInfo?: {
       likesCount: number;
       dislikesCount: number;
@@ -27,20 +27,13 @@ export class PostViewDto {
   ): PostViewDto {
     const dto = new PostViewDto();
 
-    dto.id = post._id.toString();
+    dto.id = post.id;
     dto.title = post.title;
     dto.shortDescription = post.shortDescription;
     dto.content = post.content;
-    dto.blogId = post.blogId;
-    dto.blogName = post.blogName;
+    dto.blogId = post.blogId || '';
+    dto.blogName = post.blogName || '';
     dto.createdAt = post.createdAt;
-    dto.extendedLikesInfo = {
-      dislikesCount: 0,
-      likesCount: 0,
-      myStatus: 'None',
-      newestLikes: [],
-    };
-
     dto.extendedLikesInfo = likesInfo || {
       dislikesCount: 0,
       likesCount: 0,
