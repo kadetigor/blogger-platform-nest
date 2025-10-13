@@ -26,8 +26,7 @@ export class SecurityDevicesService {
             title: userAgent
         };
 
-        const device = SecurityDevice.createInstance(dto, refreshTime);
-        await this.securityDevicesRepository.create(device)
+        await this.securityDevicesRepository.createDevice(dto, refreshTime)
     }
 
   async parseUserAgent(userAgent: string | undefined): Promise<string> {
@@ -80,7 +79,7 @@ export class SecurityDevicesService {
     }
     
     // Check if this device belongs to the specified user
-    return device.userId === userId
+    return device.user_id === userId
   }
 
   async getAllUserDevices(userId: string): Promise<SecurityDevice[] | undefined> {
@@ -134,7 +133,7 @@ export class SecurityDevicesService {
     if (!device) {
         return false; // Device not found
     }
-    if (device.userId !== userId) {
+    if (device.user_id !== userId) {
         return false;
     }
     return true;

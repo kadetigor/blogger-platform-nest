@@ -1,4 +1,3 @@
-import { randomUUID } from 'crypto';
 import { Column, CreateDateColumn, DeleteDateColumn, Entity, PrimaryColumn, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 @Entity()

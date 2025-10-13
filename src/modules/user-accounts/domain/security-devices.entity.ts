@@ -1,58 +1,28 @@
-import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { add } from "date-fns";
-import { HydratedDocument, Model } from "mongoose";
-import { CreateSecuretyDeviceDto } from "./dto/create-security-device.dto";
+import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 
-
-
-@Schema({
-    timestamps: true,
-    collection: 'security-devices'
-})
+@Entity()
 export class SecurityDevice {
-    @Prop({ type: String, required: true })
-    userId: string;
+    @PrimaryGeneratedColumn('uuid')
+    id: string
 
-    @Prop({ type: String, required: true })
-    deviceId: string;
+    @Column()
+    user_id: string;
 
-    @Prop({ type: String, required: true })
+    @Column()
+    device_id: string;
+
+    @Column()
     ip: string;
     
-    @Prop({ type: String, required: true })
+    @Column()
     title: string;
 
-    @Prop({ type: Date, default: Date.now })
-    lastActiveDate: Date;
+    @Column({ default: Date.now })
+    last_active_date: Date;
 
-    @Prop({ type: Date, required: true })
-    expiresAt: Date;
+    @Column()
+    expires_at: Date;
 
-    @Prop({ type: Date, nullable: true })
-    deletedAt: Date | null;
-
-    static createInstance(dto: CreateSecuretyDeviceDto, refreshTime: number): SecurityDeviceDocument {
-        const device = new this();
-        device.userId = dto.userId;
-        device.deviceId = dto.deviceId;
-        device.ip = dto.ip;
-        device.title = dto.title;
-        device.lastActiveDate = new Date()
-        device.expiresAt = add(new Date(), { seconds: refreshTime })
-        device.deletedAt = null
-    
-        return device as SecurityDeviceDocument;
-    }
+    @Column({ nullable: true })
+    deleted_at: Date | null;
 }
-
-export const SecurityDeviceSchema = SchemaFactory.createForClass(SecurityDevice);
-
-// Add indexes for common queries
-SecurityDeviceSchema.index({ userId: 1, deletedAt: 1 });
-SecurityDeviceSchema.index({ deviceId: 1, deletedAt: 1 });
-
-SecurityDeviceSchema.loadClass(SecurityDevice);
-
-export type SecurityDeviceDocument = HydratedDocument<SecurityDevice>;
-
-export type SecurityDeviceModelType = Model<SecurityDeviceDocument> & typeof SecurityDevice;
