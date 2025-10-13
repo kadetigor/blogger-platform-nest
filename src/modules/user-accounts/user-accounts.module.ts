@@ -19,11 +19,14 @@ import { RefreshTokenSessionsRepository } from './infrastructure/refresh-token-s
 import { RefreshTokenStrategy } from './guards/refresh/refresh-token.strategy';
 import { SecurityDevicesController } from './api/security-devices.controller';
 import { SaUsersController } from './api/sa-users.controller';
-import { DatabaseModule } from '../database/database.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { User } from './domain/user.entity';
+import { RefreshTokenSession } from './domain/refresh-token.entity';
+import { SecurityDevice } from './domain/security-devices.entity';
 
 @Module({
   imports: [
-    DatabaseModule,
+    TypeOrmModule.forFeature([User, RefreshTokenSession, SecurityDevice]),
     NotificationsModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

@@ -36,7 +36,7 @@ export class UsersService {
     const savedUser = await this.usersRepository.createUser({
       email: dto.email,
       login: dto.login,
-      passwordHash: passwordHash,
+      password_hash: passwordHash,
     });
 
     // Now savedUser.id is guaranteed to be non-null
@@ -60,8 +60,7 @@ export class UsersService {
       }
     }
 
-    user.update(dto);
-    const updatedUser = await this.usersRepository.save(user);
+    const updatedUser = await this.usersRepository.updateUser(id, dto);
 
     if (!updatedUser.id) {
       throw new Error('Failed to update user - no ID returned');
@@ -79,12 +78,11 @@ export class UsersService {
     }
 
     // If already deleted, just return successfully (idempotent operation)
-    if (user.deletedAt !== null) {
+    if (user.deleted_at !== null) {
       return;
     }
 
-    user.makeDeleted();
-    await this.usersRepository.save(user);
+    await this.usersRepository.deleteUser(id);
   }
 
   async changePassword(id: string, newPassword: string): Promise<void> {
@@ -112,9 +110,5 @@ export class UsersService {
 
   async getAllUsers(skip: number = 0, limit: number = 10): Promise<User[]> {
     return this.usersRepository.findAll(skip, limit);
-  }
-
-  async getUsersCount(): Promise<number> {
-    return this.usersRepository.count();
   }
 }

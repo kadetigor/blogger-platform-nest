@@ -1,107 +1,29 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
-import { User, UserDocument } from '../domain/user.entity';
-import { CreateUserDomainDto } from '../dto/create-user.dto';
+import { User } from '../domain/user.entity';
+import { CreateUserDomainDto, UpdateUserDto } from '../dto/create-user.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { kMaxLength } from 'buffer';
 
 @Injectable()
 export class UsersRepository {
-  constructor(private databaseService: DatabaseService) {}
+  constructor(@InjectRepository(User) private repository: Repository<User>) {}
   
-  // Helper to convert database rows to User entities
-  private mapToUser(row: any): User | null {
-    if (!row) return null;
 
-    return new User(
-      row.id, // Always non-null from database due to NOT NULL constraint
-      row.email,
-      row.login,
-      row.password_hash,
-      row.is_email_confirmed || false,
-      row.confirmation_code,
-      row.confirmation_code_expiry,
-      row.created_at,
-      row.updated_at,
-      row.deleted_at
-    );
-  }
-  
-  async save(user: UserDocument): Promise<UserDocument> {
-    const id = user.id;
-
-    if (id && id !== '') {
-      // Update existing user
-      const result = await this.databaseService.sql`
-        UPDATE users 
-        SET 
-          email = ${user.email},
-          login = ${user.login},
-          password_hash = ${user.passwordHash},
-          is_email_confirmed = ${user.isEmailConfirmed},
-          confirmation_code = ${user.confirmationCode},
-          confirmation_code_expiry = ${user.confirmationCodeExpiry},
-          deleted_at = ${user.deletedAt},
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = ${id}::uuid
-        RETURNING *
-      `;
-      
-      if (result.length === 0) {
-        throw new NotFoundException('User not found');
-      }
-      
-      const updatedUser = this.mapToUser(result[0]);
-      if (!updatedUser) {
-        throw new Error('Failed to map user from database');
-      }
-      
-      return updatedUser;
-    } else {
-      // Insert new user
-      const result = await this.databaseService.sql`
-        INSERT INTO users (
-          email, 
-          login, 
-          password_hash,
-          is_email_confirmed,
-          confirmation_code,
-          confirmation_code_expiry
-        ) VALUES (
-          ${user.email},
-          ${user.login},
-          ${user.passwordHash},
-          ${user.isEmailConfirmed},
-          ${user.confirmationCode},
-          ${user.confirmationCodeExpiry}
-        )
-        RETURNING *
-      `;
-      
-      const newUser = this.mapToUser(result[0]);
-      if (!newUser) {
-        throw new Error('Failed to create user');
-      }
-      
-      return newUser;
-    }
-  }
-
-  async findById(id: string): Promise<UserDocument | null> {
+  async findById(id: string): Promise<User | null> {
     try {
-      const result = await this.databaseService.sql`
-        SELECT * FROM users 
-        WHERE id = ${id}::uuid 
-        AND deleted_at IS NULL
-        LIMIT 1
-      `;
+      const result = await this.repository.findOneBy({
+        id: id,
+      });
       
-      return this.mapToUser(result[0]);
+      return result;
     } catch (error) {
       // Invalid UUID format
       return null;
     }
   }
 
-  async getByIdOrNotFoundFail(id: string): Promise<UserDocument> {
+  async getByIdOrNotFoundFail(id: string): Promise<User> {
     const user = await this.findById(id);
     if (!user) {
       throw new NotFoundException('User not found');
@@ -109,103 +31,97 @@ export class UsersRepository {
     return user;
   }
 
-  async findByLogin(login: string): Promise<UserDocument | null> {
-    const result = await this.databaseService.sql`
-      SELECT * FROM users 
-      WHERE login = ${login}
-      AND deleted_at IS NULL
-      LIMIT 1
-    `;
+  async findByLogin(login: string): Promise<User | null> {
+    const result = await this.repository.findOneBy({
+      login: login,
+    })
     
-    return this.mapToUser(result[0]);
+    return result;
   }
 
-  async findByEmail(email: string): Promise<UserDocument | null> {
-    const result = await this.databaseService.sql`
-      SELECT * FROM users 
-      WHERE email = ${email}
-      AND deleted_at IS NULL
-      LIMIT 1
-    `;
+  async findByEmail(email: string): Promise<User | null> {
+    const result = await this.repository.findOneBy({
+      email: email,
+    })
     
-    return this.mapToUser(result[0]);
+    return result;
   }
 
-  async findByLoginOrEmail(loginOrEmail: string): Promise<UserDocument | null> {
-    const result = await this.databaseService.sql`
-      SELECT * FROM users 
-      WHERE (login = ${loginOrEmail} OR email = ${loginOrEmail})
-      AND deleted_at IS NULL
-      LIMIT 1
-    `;
+  async findByLoginOrEmail(loginOrEmail: string): Promise<User | null> {
+    const result = await this.repository.findOne({
+      where: [
+        { login: loginOrEmail },// this means OR is used
+        { email: loginOrEmail }
+      ]
+    })
     
-    return this.mapToUser(result[0]);
+    return result;
   }
 
-  async findByConfirmationCode(code: string): Promise<UserDocument | null> {
-    const result = await this.databaseService.sql`
-      SELECT * FROM users 
-      WHERE confirmation_code = ${code}
-      AND deleted_at IS NULL
-      LIMIT 1
-    `;
+  async findByConfirmationCode(code: string): Promise<User | null> {
+    const result = await this.repository.findOneBy({
+      confirmation_code: code,
+    })
     
-    return this.mapToUser(result[0]);
+    return result;
   }
 
-  async createUser(dto: CreateUserDomainDto): Promise<UserDocument> {
-    const user = User.createInstance({
+  async createUser(dto: CreateUserDomainDto): Promise<User> {
+    const user = await this.repository.create({
       email: dto.email,
       login: dto.login,
-      passwordHash: dto.passwordHash,
+      password_hash: dto.password_hash,
     });
     
-    return this.save(user);
+    return this.repository.save(user);
   }
 
-  async findAll(skip: number = 0, limit: number = 10): Promise<UserDocument[]> {
-    const results = await this.databaseService.sql`
-      SELECT * FROM users 
-      WHERE deleted_at IS NULL
-      ORDER BY created_at DESC
-      LIMIT ${limit}
-      OFFSET ${skip}
-    `;
+  async updateUser(id: string, dto: UpdateUserDto): Promise<User> {
+    await this.repository.update({id}, dto)
+
+    const updatedUser = await this.findById(id);
     
-    const users: User[] = [];
-    for (const row of results) {
-      const user = this.mapToUser(row);
-      if (user) {
-        users.push(user);
-      }
+    if (!updatedUser) {
+      throw new NotFoundException
+    } else {
+      return updatedUser
     }
-    
-    return users;
   }
 
-  async count(): Promise<number> {
-    const result = await this.databaseService.sql`
-      SELECT COUNT(*) as count FROM users 
-      WHERE deleted_at IS NULL
-    `;
+  async deleteUser(id: string): Promise<void> {
+    try {
+      await this.repository.softDelete({id})
+    } catch (error) {
+      throw new NotFoundException
+    }
+  }
+
+  async findAll(skip: number = 0, limit: number = 10): Promise<User[]> {
+
+    const result = await this.repository.find({
+      order:
+        {
+          created_at: "DESC",
+        },
+      take: limit,
+      skip: skip,
+    })
     
-    return parseInt(result[0].count, 10);
+    return result;
   }
 
   async updateConfirmationCode(id: string, newConfirmationCode: string): Promise<boolean> {
     try {
-      const result = await this.databaseService.sql`
-        UPDATE users 
-        SET 
-          confirmation_code = ${newConfirmationCode},
-          confirmation_code_expiry = ${new Date(Date.now() + 24 * 60 * 60 * 1000)},
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = ${id}::uuid
-        AND deleted_at IS NULL
-        RETURNING id
-      `;
+      const result = await this.repository.update(
+        {id},
+        {
+          confirmation_code: newConfirmationCode,
+          confirmation_code_expiry: new Date(Date.now() + 24 * 60 * 60 * 1000)
+        },
+        
+      )
       
-      return result.length > 0;
+      return result.affected !== undefined && result.affected > 0;
     } catch (error) {
       return false;
     }
@@ -213,17 +129,15 @@ export class UsersRepository {
   
   async updatePassword(id: string, passwordHash: string): Promise<boolean> {
     try {
-      const result = await this.databaseService.sql`
-        UPDATE users 
-        SET 
-          password_hash = ${passwordHash},
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = ${id}::uuid
-        AND deleted_at IS NULL
-        RETURNING id
-      `;
+      const result = await this.repository.update(
+        {id},
+        {
+          password_hash: passwordHash,
+        },
+        
+      )
       
-      return result.length > 0;
+      return result.affected !== undefined && result.affected > 0;
     } catch (error) {
       return false;
     }
@@ -231,18 +145,16 @@ export class UsersRepository {
 
   async clearRecoveryCode(id: string): Promise<boolean> {
     try {
-      const result = await this.databaseService.sql`
-        UPDATE users 
-        SET 
-          confirmation_code = NULL,
-          confirmation_code_expiry = NULL,
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = ${id}::uuid
-        AND deleted_at IS NULL
-        RETURNING id
-      `;
+      const result = await this.repository.update(
+        {id},
+        {
+          confirmation_code: null,
+          confirmation_code_expiry: null
+        },
+        
+      )
       
-      return result.length > 0;
+      return result.affected !== undefined && result.affected > 0;
     } catch (error) {
       return false;
     }

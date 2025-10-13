@@ -8,6 +8,7 @@ import { BloggersPlatformModule } from './modules/blogger-platform/blogger-platf
 import { ConfigModule } from '@nestjs/config';
 import { CqrsModule } from '@nestjs/cqrs';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 @Module({
   imports: [
@@ -19,6 +20,13 @@ import { ThrottlerModule } from '@nestjs/throttler';
     //   ttl: 10000, // 10 seconds in milliseconds
     //   limit: 5, // 5 requests per TTL window
     // }]),
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      url: process.env.DATABASE_URL,
+      ssl: true,
+      autoLoadEntities: true,
+      synchronize: false
+    }),
     CqrsModule.forRoot(),
     UserAccountsModule,
     TestingModule,

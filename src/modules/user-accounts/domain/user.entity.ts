@@ -1,87 +1,62 @@
-// user.entity.ts
 import { randomUUID } from 'crypto';
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, PrimaryColumn, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
+@Entity()
 export class User {
-  constructor(
-    public id: string,
-    public email: string,
-    public login: string,
-    public passwordHash: string,
-    public isEmailConfirmed: boolean = false,
-    public confirmationCode: string | null = null,
-    public confirmationCodeExpiry: Date | null = null,
-    public createdAt: Date = new Date(),
-    public updatedAt: Date = new Date(),
-    public deletedAt: Date | null = null
-  ) {}
+    @PrimaryGeneratedColumn('uuid')
+    id: string
+
+    @Column()
+    email: string
+
+    @Column()
+    login: string
+
+    @Column()
+    password_hash: string
+
+    @Column({default: false})
+    is_email_confirmed: boolean
+
+    @Column({default: null})
+    confirmation_code: string | null
+
+    @Column({default: null})
+    confirmation_code_expiry: Date | null
+
+    @CreateDateColumn()
+    created_at: Date
+
+    @UpdateDateColumn()
+    updated_at: Date | null
+
+    @DeleteDateColumn()
+    deleted_at: Date | null
+
   
   // Business logic methods
   confirmEmail(code: string): boolean {
-    if (this.confirmationCode !== code) {
+    if (this.confirmation_code !== code) {
       return false;
     }
     
-    if (this.confirmationCodeExpiry && new Date() > this.confirmationCodeExpiry) {
+    if (this.confirmation_code_expiry && new Date() > this.confirmation_code_expiry) {
       return false;
     }
     
-    this.isEmailConfirmed = true;
-    this.confirmationCode = null;
-    this.confirmationCodeExpiry = null;
+    this.is_email_confirmed = true;
+    this.confirmation_code = null;
+    this.confirmation_code_expiry = null;
     return true;
   }
   
   setConfirmationCode(code: string): void {
-    this.confirmationCode = code;
-    this.confirmationCodeExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
-  }
-  
-  makeDeleted(): void {
-    this.deletedAt = new Date();
-  }
-  
-  update(updates: Partial<User>): void {
-    if (updates.email) this.email = updates.email;
-    if (updates.login) this.login = updates.login;
-    if (updates.passwordHash) this.passwordHash = updates.passwordHash;
-    this.updatedAt = new Date();
-  }
-  
-  // Factory method to replace Mongoose's createInstance
-  static createInstance(dto: {
-    email: string;
-    login: string;
-    passwordHash: string;
-  }): User {
-    return new User(
-      '', // Will be set by database with gen_random_uuid()
-      dto.email,
-      dto.login,
-      dto.passwordHash
-    );
-  }
-
-  // Factory method for registration with confirmation code
-  static createInstanceForRegistration(dto: {
-    email: string;
-    login: string;
-    passwordHash: string;
-  }): User {
-    const user = new User(
-      '', // Will be set by database with gen_random_uuid()
-      dto.email,
-      dto.login,
-      dto.passwordHash
-    );
-
-    // Generate confirmation code for email verification
-    user.setConfirmationCode(randomUUID());
-
-    return user;
+    this.confirmation_code = code;
+    this.confirmation_code_expiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
   }
   
 }
 
 // Type exports for compatibility
-export type UserDocument = User;
-export type UserModelType = typeof User;
+// export type UserDocument = User;
+// export type UserModelType = typeof User;

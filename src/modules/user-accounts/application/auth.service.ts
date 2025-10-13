@@ -64,7 +64,7 @@ export class AuthService {
     //   return null;
     // }
 
-    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
 
     if (!isPasswordValid) {
       return null;
@@ -144,13 +144,13 @@ export class AuthService {
       const user = await this.usersRepository.createUser({
         email: dto.email,
         login: dto.login,
-        passwordHash,
+        password_hash: passwordHash,
       });
 
       // Generate and save confirmation code
       const confirmationCode = randomUUID();
       user.setConfirmationCode(confirmationCode);
-      await this.usersRepository.save(user);
+
 
       console.log(`Generated confirmation code for ${user.email}: ${confirmationCode}`);
 
@@ -176,7 +176,7 @@ export class AuthService {
       throw new BadRequestException({ errorsMessages: [{ field: 'code', message: 'User was not found' }] });
     }
 
-    if (user.isEmailConfirmed) {
+    if (user.is_email_confirmed) {
       throw new BadRequestException({ errorsMessages: [{ field: 'email', message: 'Email already confirmed' }] });
     }
 
@@ -186,7 +186,6 @@ export class AuthService {
       throw new BadRequestException({ errorsMessages: [{ field: 'code', message: 'Code expired or invalid' }] });
     }
 
-    await this.usersRepository.save(user);
     return { success: true };
   }
 
@@ -197,7 +196,7 @@ export class AuthService {
       throw new BadRequestException({ errorsMessages: [{ field: 'email', message: 'User was not found' }] });
     }
 
-    if (user.isEmailConfirmed) {
+    if (user.is_email_confirmed) {
       throw new BadRequestException({ errorsMessages: [{ field: 'email', message: 'Email already confirmed' }] });
     }
 
@@ -205,7 +204,6 @@ export class AuthService {
       // Generate new confirmation code
       const confirmationCode = randomUUID();
       user.setConfirmationCode(confirmationCode);
-      await this.usersRepository.save(user);
 
       console.log(`Generated new confirmation code for ${email}: ${confirmationCode}`);
 
