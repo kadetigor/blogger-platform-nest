@@ -19,6 +19,10 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
    * @param payload
    */
   async validate(payload: UserContextDto): Promise<UserContextDto> {
-    return payload;
+    // Map userId to id for compatibility with existing code
+    return {
+      ...payload,
+      id: payload.userId || payload.id
+    };
   }
 }

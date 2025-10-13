@@ -9,11 +9,14 @@ import { PostsExternalQueryRepository } from './infrastructure/external-query/po
 import { PostsExternalService } from './application/posts.external-service';
 import { UserAccountsModule } from 'src/modules/user-accounts/user-accounts.module';
 import { DatabaseModule } from 'src/modules/database/database.module';
+import { PostLikeRepository } from './infrastructure/posts-likes.repository';
+import { CommentsModule } from '../comments/comments.module';
 
 @Module({
   imports: [
     DatabaseModule,
     forwardRef(() => BlogsModule),
+    forwardRef(() => CommentsModule),
     UserAccountsModule
   ],
   controllers: [PostsController],
@@ -22,7 +25,8 @@ import { DatabaseModule } from 'src/modules/database/database.module';
     PostsRepository,
     PostsQueryRepository,
     PostsExternalQueryRepository,
-    PostsExternalService
+    PostsExternalService,
+    PostLikeRepository
   ],
   exports: [PostsExternalQueryRepository, PostsExternalService],
 })

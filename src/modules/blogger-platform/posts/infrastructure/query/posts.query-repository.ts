@@ -6,11 +6,13 @@ import { GetPostsQueryParams } from '../../api/input-dto/get-posts-query-params.
 import { DatabaseService } from 'src/modules/database/database.service';
 import { PostsSortBy } from '../../api/input-dto/posts-sort-by';
 import { SortDirection } from 'src/core/dto/base.query-params.input-dto';
+import { PostLikeRepository } from '../posts-likes.repository';
 
 @Injectable()
 export class PostsQueryRepository {
   constructor(
     private databaseService: DatabaseService,
+    private postLikeRepository: PostLikeRepository,
   ) {}
 
   private mapToPost(row: any): Post | null {
@@ -29,7 +31,7 @@ export class PostsQueryRepository {
     );
   }
 
-  async getPostById(id: string): Promise<PostViewDto> {
+  async getPostById(id: string, userId?: string): Promise<PostViewDto> {
     const result = await this.databaseService.sql`
       SELECT * FROM posts
       WHERE id = ${id}::uuid
@@ -46,19 +48,15 @@ export class PostsQueryRepository {
       throw new NotFoundException('post not found');
     }
 
-    // Return with default likes info as per instructions
-    const likesInfo = {
-      dislikesCount: 0,
-      likesCount: 0,
-      myStatus: 'None' as const,
-      newestLikes: []
-    };
+    // Fetch actual likes info from database
+    const likesInfo = await this.postLikeRepository.getExtendedLikesInfo(post.id, userId);
 
     return PostViewDto.mapToView(post, likesInfo);
   }
 
   async getAllPosts(
     query: GetPostsQueryParams,
+    userId?: string
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
     const skip = query.calculateSkip();
     const limit = query.pageSize;
@@ -101,22 +99,26 @@ export class PostsQueryRepository {
       OFFSET ${skip}
     `;
 
-    // Default likes info for all posts
-    const likesInfo = {
-      dislikesCount: 0,
-      likesCount: 0,
-      myStatus: 'None' as const,
-      newestLikes: []
-    };
+    // Map to Post entities
+    const posts = results.map(row => this.mapToPost(row)).filter(Boolean) as Post[];
 
-    const items = results.map(row => {
-      const post = this.mapToPost(row);
-      if (!post) return null;
+    // Fetch likes info for all posts in a single batch query
+    const postIds = posts.map(p => p.id);
+    const likesInfoMap = await this.postLikeRepository.getBatchExtendedLikesInfo(postIds, userId);
+
+    // Combine posts with their likes info
+    const filteredItems = posts.map(post => {
+      const likesInfo = likesInfoMap.get(post.id) || {
+        likesCount: 0,
+        dislikesCount: 0,
+        myStatus: 'None' as const,
+        newestLikes: []
+      };
       return PostViewDto.mapToView(post, likesInfo);
-    }).filter(Boolean) as PostViewDto[];
+    });
 
     return PaginatedViewDto.mapToView({
-      items,
+      items: filteredItems,
       totalCount,
       page: query.pageNumber,
       size: query.pageSize,
@@ -125,7 +127,8 @@ export class PostsQueryRepository {
 
   async getAllPostsByBlog(
     query: GetPostsQueryParams,
-    blogId: string
+    blogId: string,
+    userId?: string
   ): Promise<PaginatedViewDto<PostViewDto[]>> {
     const skip = query.calculateSkip();
     const limit = query.pageSize;
@@ -168,22 +171,26 @@ export class PostsQueryRepository {
       OFFSET ${skip}
     `;
 
-    // Default likes info for all posts
-    const likesInfo = {
-      dislikesCount: 0,
-      likesCount: 0,
-      myStatus: 'None' as const,
-      newestLikes: []
-    };
+    // Map to Post entities
+    const posts = results.map(row => this.mapToPost(row)).filter(Boolean) as Post[];
 
-    const items = results.map(row => {
-      const post = this.mapToPost(row);
-      if (!post) return null;
+    // Fetch likes info for all posts in a single batch query
+    const postIds = posts.map(p => p.id);
+    const likesInfoMap = await this.postLikeRepository.getBatchExtendedLikesInfo(postIds, userId);
+
+    // Combine posts with their likes info
+    const filteredItems = posts.map(post => {
+      const likesInfo = likesInfoMap.get(post.id) || {
+        likesCount: 0,
+        dislikesCount: 0,
+        myStatus: 'None' as const,
+        newestLikes: []
+      };
       return PostViewDto.mapToView(post, likesInfo);
-    }).filter(Boolean) as PostViewDto[];
+    });
 
     return PaginatedViewDto.mapToView({
-      items,
+      items: filteredItems,
       totalCount,
       page: query.pageNumber,
       size: query.pageSize,

@@ -1,16 +1,7 @@
-import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-
-
-// Schema CommentorInfo is used in Comment Entity
-@Schema({
-    _id: false,
-})
+// Plain TypeScript class for CommentatorInfo
 export class CommentatorInfo {
-    @Prop({ type: String, required: true })
-    userId: string;
-
-    @Prop({ type: String, required: true })
-    userLogin: string;
+    constructor(
+        public userId: string,
+        public userLogin: string
+    ) {}
 }
-
-export const CommentatorInfoSchema = SchemaFactory.createForClass(CommentatorInfo);

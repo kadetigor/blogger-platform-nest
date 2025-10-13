@@ -15,7 +15,7 @@ export class CommentViewDto {
   static mapToView(comment: CommentDocument, likes: CommentLikeViewDto): CommentViewDto {
     const dto = new CommentViewDto()
 
-    dto.id = comment._id.toString()
+    dto.id = comment.id
     dto.content = comment.content
     dto.commentatorInfo = {
       userId: comment.commentatorInfo.userId,

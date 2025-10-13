@@ -38,7 +38,7 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @UseGuards(ThrottlerGuard)
+  //@UseGuards(ThrottlerGuard)
   async login(
     @Body() loginDto: LoginInputDto,
     @Res({ passthrough: true }) res: Response,
@@ -70,8 +70,8 @@ export class AuthController {
 
   @Post('registration')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UseGuards(ThrottlerGuard)
-  @Throttle({ default: { limit: 5, ttl: 10000 } }) // 5 requests per 10 seconds
+  //@UseGuards(ThrottlerGuard)
+  //@Throttle({ default: { limit: 5, ttl: 10000 } }) // 5 requests per 10 seconds
   async registration(@Body() registrationDto: RegistrationInputDto) {
     const result = await this.authService.registerUser(registrationDto);
 
@@ -84,8 +84,8 @@ export class AuthController {
 
   @Post('registration-confirmation')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UseGuards(ThrottlerGuard)
-  @Throttle({ default: { limit: 5, ttl: 10000 } }) // 5 requests per 10 seconds
+  //@UseGuards(ThrottlerGuard)
+  //@Throttle({ default: { limit: 5, ttl: 10000 } }) // 5 requests per 10 seconds
   async confirmRegistration(
     @Body() confirmationDto: RegistrationConfirmationInputDto,
   ) {
@@ -102,8 +102,8 @@ export class AuthController {
 
   @Post('registration-email-resending')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UseGuards(ThrottlerGuard)
-  @Throttle({ default: { limit: 5, ttl: 10000 } }) // 5 requests per 10 seconds
+  //@UseGuards(ThrottlerGuard)
+  //@Throttle({ default: { limit: 5, ttl: 10000 } }) // 5 requests per 10 seconds
   async resendRegistrationEmail(
     @Body() resendDto: RegistrationEmailResendingInputDto,
   ) {
@@ -130,8 +130,8 @@ export class AuthController {
 
   @Post('password-recovery')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UseGuards(ThrottlerGuard)
-  @Throttle({ default: { limit: 5, ttl: 10000 } }) // 5 requests per 10 seconds
+  //@UseGuards(ThrottlerGuard)
+  //@Throttle({ default: { limit: 5, ttl: 10000 } }) // 5 requests per 10 seconds
   async passwordRecoveryEmail(
     @Body() dto: PasswordRecoveryRequestDto,
   ): Promise<void> {
@@ -140,8 +140,8 @@ export class AuthController {
 
   @Post('new-password')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UseGuards(ThrottlerGuard)
-  @Throttle({ default: { limit: 5, ttl: 10000 } }) // 5 requests per 10 seconds
+  //@UseGuards(ThrottlerGuard)
+  //@Throttle({ default: { limit: 5, ttl: 10000 } }) // 5 requests per 10 seconds
   async confirmPasswordRecovery(
     @Body() passwordRecoveryDto: PasswordRecoveryDto
   ): Promise<void> {
@@ -151,7 +151,7 @@ export class AuthController {
   @Post('refresh-token')
   @HttpCode(HttpStatus.OK)
   @UseGuards(RefreshTokenGuard)
-  @Throttle({ default: { limit: 5, ttl: 10000 } })
+  //@Throttle({ default: { limit: 5, ttl: 10000 } })
   async refreshTokens(
     @Request() req,
     @Res({ passthrough: true }) res: Response,

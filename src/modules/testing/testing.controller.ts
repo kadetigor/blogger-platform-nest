@@ -18,6 +18,9 @@ export class TestingController {
     // Add any other tables you want to clear for testing
     await this.databaseService.sql`TRUNCATE TABLE blogs RESTART IDENTITY CASCADE`;
     await this.databaseService.sql`TRUNCATE TABLE posts RESTART IDENTITY CASCADE`;
+    await this.databaseService.sql`TRUNCATE TABLE comments RESTART IDENTITY CASCADE`;
+    await this.databaseService.sql`TRUNCATE TABLE comment_likes RESTART IDENTITY CASCADE`;
+    await this.databaseService.sql`TRUNCATE TABLE post_likes RESTART IDENTITY CASCADE`;
     // await this.databaseService.sql`TRUNCATE TABLE comments RESTART IDENTITY CASCADE`;
 
     return {

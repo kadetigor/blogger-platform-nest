@@ -1,10 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { CommentsRepository } from "../infrastructure/comments.repository";
 import { CommentsLikesRepository } from "../infrastructure/comments-likes.repository";
-import { CreateCommentInputDto } from "../api/input-dto.ts/create-comment.input-dto";
 import { UpdateCommentDto } from "../dto/update-comment.dto";
-import { Comment, CommentModelType } from "../domain/comment.entity";
-import { InjectModel } from "@nestjs/mongoose";
 
 @Injectable()
 export class CommentsService {
@@ -12,7 +9,6 @@ export class CommentsService {
   constructor(
     private commentsRepository: CommentsRepository,
     private commentLikesRepository: CommentsLikesRepository,
-    @InjectModel(Comment.name) private CommentModel: CommentModelType,
   ) { }
 
   async updateComment(id: string, dto: UpdateCommentDto): Promise<void> {
