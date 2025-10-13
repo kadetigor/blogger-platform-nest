@@ -1,47 +1,28 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { UserExternalDto } from './external-dto/users.external-dto';
 import { DatabaseService } from 'src/modules/database/database.service';
-import { User, UserDocument } from '../../domain/user.entity';
+import { User } from '../../domain/user.entity';
+import { Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class UsersExternalQueryRepository {
-  constructor(private databaseService: DatabaseService) {}
+  constructor(@InjectRepository(User) private repository: Repository<User>) {}
   
   // Helper to convert database rows to User entities
-  private mapToUser(row: any): User | null {
-    if (!row) return null;
-
-    return new User(
-      row.id, // Always non-null from database due to NOT NULL constraint
-      row.email,
-      row.login,
-      row.password_hash,
-      row.is_email_confirmed || false,
-      row.confirmation_code,
-      row.confirmation_code_expiry,
-      row.created_at,
-      row.updated_at,
-      row.deleted_at
-    );
-  }
-
-  async findById(id: string): Promise<UserDocument | null> {
+  async findById(id: string): Promise<User | null> {
     try {
-      const result = await this.databaseService.sql`
-        SELECT * FROM users 
-        WHERE id = ${id}::uuid 
-        AND deleted_at IS NULL
-        LIMIT 1
-      `;
+      const result = await this.repository.findOneBy({
+        id: id,
+      });
       
-      return this.mapToUser(result[0]);
+      return result;
     } catch (error) {
       // Invalid UUID format
       return null;
     }
   }
 
-  async getByIdOrNotFoundFail(id: string): Promise<UserDocument> {
+  async getByIdOrNotFoundFail(id: string): Promise<User> {
     const user = await this.findById(id);
     if (!user) {
       throw new NotFoundException('User not found');
@@ -49,76 +30,52 @@ export class UsersExternalQueryRepository {
     return user;
   }
 
-  async findByLogin(login: string): Promise<UserDocument | null> {
-    const result = await this.databaseService.sql`
-      SELECT * FROM users 
-      WHERE login = ${login}
-      AND deleted_at IS NULL
-      LIMIT 1
-    `;
+  async findByLogin(login: string): Promise<User | null> {
+    const result = await this.repository.findOneBy({
+      login: login,
+    })
     
-    return this.mapToUser(result[0]);
+    return result;
   }
 
-  async findByEmail(email: string): Promise<UserDocument | null> {
-    const result = await this.databaseService.sql`
-      SELECT * FROM users 
-      WHERE email = ${email}
-      AND deleted_at IS NULL
-      LIMIT 1
-    `;
+  async findByEmail(email: string): Promise<User | null> {
+    const result = await this.repository.findOneBy({
+      email: email,
+    })
     
-    return this.mapToUser(result[0]);
+    return result;
   }
 
-  async findByLoginOrEmail(loginOrEmail: string): Promise<UserDocument | null> {
-    const result = await this.databaseService.sql`
-      SELECT * FROM users 
-      WHERE (login = ${loginOrEmail} OR email = ${loginOrEmail})
-      AND deleted_at IS NULL
-      LIMIT 1
-    `;
+  async findByLoginOrEmail(loginOrEmail: string): Promise<User | null> {
+    const result = await this.repository.findOne({
+      where: [
+        { login: loginOrEmail },// this means OR is used
+        { email: loginOrEmail }
+      ]
+    })
     
-    return this.mapToUser(result[0]);
+    return result;
   }
 
-  async findByConfirmationCode(code: string): Promise<UserDocument | null> {
-    const result = await this.databaseService.sql`
-      SELECT * FROM users 
-      WHERE confirmation_code = ${code}
-      AND deleted_at IS NULL
-      LIMIT 1
-    `;
+  async findByConfirmationCode(code: string): Promise<User | null> {
+    const result = await this.repository.findOneBy({
+      confirmation_code: code,
+    })
     
-    return this.mapToUser(result[0]);
+    return result;
   }
 
-  async findAll(skip: number = 0, limit: number = 10): Promise<UserDocument[]> {
-    const results = await this.databaseService.sql`
-      SELECT * FROM users 
-      WHERE deleted_at IS NULL
-      ORDER BY created_at DESC
-      LIMIT ${limit}
-      OFFSET ${skip}
-    `;
-    
-    const users: User[] = [];
-    for (const row of results) {
-      const user = this.mapToUser(row);
-      if (user) {
-        users.push(user);
-      }
-    }
-    
-    return users;
-  }
+  async findAll(skip: number = 0, limit: number = 10): Promise<User[]> {
 
-  async count(): Promise<number> {
-    const result = await this.databaseService.sql`
-      SELECT COUNT(*) as count FROM users 
-      WHERE deleted_at IS NULL
-    `;
+    const result = await this.repository.find({
+      order:
+        {
+          created_at: "DESC",
+        },
+      take: limit,
+      skip: skip,
+    })
     
-    return parseInt(result[0].count, 10);
+    return result;
   }
 }

@@ -1,49 +1,29 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { DatabaseService } from "src/modules/database/database.service";
-import { User, UserDocument } from "../../domain/user.entity";
+import { User } from "../../domain/user.entity";
 import { GetUsersQueryParams } from "../../api/input-dto/get-users-query-params.input-dto";
 import { UsersSortBy } from "../../api/input-dto/users-sort-by";
 import { SortDirection } from "src/core/dto/base.query-params.input-dto";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
 
 @Injectable()
 export class UsersQueryRepository {
-  constructor(private databaseService: DatabaseService) {}
+  constructor(@InjectRepository(User) private repository: Repository<User>) {}
   
-  // Helper to convert database rows to User entities
-  private mapToUser(row: any): User | null {
-    if (!row) return null;
-
-    return new User(
-      row.id, // Always non-null from database due to NOT NULL constraint
-      row.email,
-      row.login,
-      row.password_hash,
-      row.is_email_confirmed || false,
-      row.confirmation_code,
-      row.confirmation_code_expiry,
-      row.created_at,
-      row.updated_at,
-      row.deleted_at
-    );
-  }
-
-  async findById(id: string): Promise<UserDocument | null> {
+  async findById(id: string): Promise<User | null> {
     try {
-      const result = await this.databaseService.sql`
-        SELECT * FROM users 
-        WHERE id = ${id}::uuid 
-        AND deleted_at IS NULL
-        LIMIT 1
-      `;
+      const result = await this.repository.findOneBy({
+        id: id,
+      });
       
-      return this.mapToUser(result[0]);
+      return result;
     } catch (error) {
       // Invalid UUID format
       return null;
     }
   }
 
-  async getByIdOrNotFoundFail(id: string): Promise<UserDocument> {
+  async getByIdOrNotFoundFail(id: string): Promise<User> {
     const user = await this.findById(id);
     if (!user) {
       throw new NotFoundException('User not found');
@@ -51,127 +31,52 @@ export class UsersQueryRepository {
     return user;
   }
 
-  async findByLogin(login: string): Promise<UserDocument | null> {
-    const result = await this.databaseService.sql`
-      SELECT * FROM users 
-      WHERE login = ${login}
-      AND deleted_at IS NULL
-      LIMIT 1
-    `;
+  async findByLogin(login: string): Promise<User | null> {
+    const result = await this.repository.findOneBy({
+      login: login,
+    })
     
-    return this.mapToUser(result[0]);
+    return result;
   }
 
-  async findByEmail(email: string): Promise<UserDocument | null> {
-    const result = await this.databaseService.sql`
-      SELECT * FROM users 
-      WHERE email = ${email}
-      AND deleted_at IS NULL
-      LIMIT 1
-    `;
+  async findByEmail(email: string): Promise<User | null> {
+    const result = await this.repository.findOneBy({
+      email: email,
+    })
     
-    return this.mapToUser(result[0]);
+    return result;
   }
 
-  async findByLoginOrEmail(loginOrEmail: string): Promise<UserDocument | null> {
-    const result = await this.databaseService.sql`
-      SELECT * FROM users 
-      WHERE (login = ${loginOrEmail} OR email = ${loginOrEmail})
-      AND deleted_at IS NULL
-      LIMIT 1
-    `;
+  async findByLoginOrEmail(loginOrEmail: string): Promise<User | null> {
+    const result = await this.repository.findOne({
+      where: [
+        { login: loginOrEmail },// this means OR is used
+        { email: loginOrEmail }
+      ]
+    })
     
-    return this.mapToUser(result[0]);
+    return result;
   }
 
-  async findByConfirmationCode(code: string): Promise<UserDocument | null> {
-    const result = await this.databaseService.sql`
-      SELECT * FROM users 
-      WHERE confirmation_code = ${code}
-      AND deleted_at IS NULL
-      LIMIT 1
-    `;
+  async findByConfirmationCode(code: string): Promise<User | null> {
+    const result = await this.repository.findOneBy({
+      confirmation_code: code,
+    })
     
-    return this.mapToUser(result[0]);
+    return result;
   }
 
-  async getAll(query: GetUsersQueryParams) {
-    const skip = query.calculateSkip();
-    const limit = query.pageSize;
+  async findAll(skip: number = 0, limit: number = 10): Promise<User[]> {
 
-    // Build the WHERE conditions dynamically
-    let whereClause = "deleted_at IS NULL";
-
-    // Build search conditions - should be OR, not AND
-    let searchConditions: string[] = [];
-
-    if (query.searchLoginTerm) {
-      searchConditions.push(`login ILIKE '%${query.searchLoginTerm}%'`);
-    }
-
-    if (query.searchEmailTerm) {
-      searchConditions.push(`email ILIKE '%${query.searchEmailTerm}%'`);
-    }
-
-    if (searchConditions.length > 0) {
-      whereClause += ` AND (${searchConditions.join(" OR ")})`;
-    }
-
-    // Build ORDER BY clause
-    let orderByColumn = "created_at";
-    switch (query.sortBy) {
-      case UsersSortBy.Login:
-        orderByColumn = "login";
-        break;
-      case UsersSortBy.Email:
-        orderByColumn = "email";
-        break;
-      case UsersSortBy.CreatedAt:
-      default:
-        orderByColumn = "created_at";
-        break;
-    }
-    const orderDirection = query.sortDirection === SortDirection.Asc ? "ASC" : "DESC";
-
-    // Get total count
-    const countResult = await this.databaseService.sql`
-      SELECT COUNT(*) as count FROM users
-      WHERE ${this.databaseService.sql.unsafe(whereClause)}
-    `;
-    const totalCount = parseInt(countResult[0].count, 10);
-
-    // Get paginated results
-    const results = await this.databaseService.sql`
-      SELECT * FROM users
-      WHERE ${this.databaseService.sql.unsafe(whereClause)}
-      ORDER BY ${this.databaseService.sql.unsafe(orderByColumn)} ${this.databaseService.sql.unsafe(orderDirection)}
-      LIMIT ${limit}
-      OFFSET ${skip}
-    `;
-
-    const users: User[] = [];
-    for (const row of results) {
-      const user = this.mapToUser(row);
-      if (user) {
-        users.push(user);
-      }
-    }
-
-    return {
-      items: users,
-      totalCount,
-      page: query.pageNumber,
-      pageSize: query.pageSize,
-      pagesCount: Math.ceil(totalCount / query.pageSize)
-    };
-  }
-
-  async count(): Promise<number> {
-    const result = await this.databaseService.sql`
-      SELECT COUNT(*) as count FROM users 
-      WHERE deleted_at IS NULL
-    `;
+    const result = await this.repository.find({
+      order:
+        {
+          created_at: "DESC",
+        },
+      take: limit,
+      skip: skip,
+    })
     
-    return parseInt(result[0].count, 10);
+    return result;
   }
 }
