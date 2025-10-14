@@ -15,7 +15,7 @@ export class UserExternalDto {
     dto.email = user.email;
     dto.login = user.login;
     dto.id = user.id.toString();
-    dto.createdAt = user.created_at;
+    dto.createdAt = user.createdAt;
 
     return dto;
   }

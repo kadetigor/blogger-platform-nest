@@ -36,7 +36,7 @@ export class UsersService {
     const savedUser = await this.usersRepository.createUser({
       email: dto.email,
       login: dto.login,
-      password_hash: passwordHash,
+      passwordHash: passwordHash,
     });
 
     // Now savedUser.id is guaranteed to be non-null
@@ -78,7 +78,7 @@ export class UsersService {
     }
 
     // If already deleted, just return successfully (idempotent operation)
-    if (user.deleted_at !== null) {
+    if (user.deletedAt !== null) {
       return;
     }
 

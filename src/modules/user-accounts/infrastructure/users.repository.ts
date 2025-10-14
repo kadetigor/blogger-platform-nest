@@ -2,17 +2,21 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { User } from '../domain/user.entity';
 import { CreateUserDomainDto, UpdateUserDto } from '../dto/create-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 
 @Injectable()
 export class UsersRepository {
   constructor(@InjectRepository(User) private repository: Repository<User>) {}
+
+  async save(user: User): Promise<User> {
+    return this.repository.save(user);
+}
   
   async createUser(dto: CreateUserDomainDto): Promise<User> {
-    const user = await this.repository.create({
+    const user = this.repository.create({
       email: dto.email,
       login: dto.login,
-      password_hash: dto.password_hash,
+      passwordHash: dto.passwordHash,
     });
     
     return this.repository.save(user);
@@ -43,8 +47,8 @@ export class UsersRepository {
       const result = await this.repository.update(
         {id},
         {
-          confirmation_code: newConfirmationCode,
-          confirmation_code_expiry: new Date(Date.now() + 24 * 60 * 60 * 1000)
+          confirmationCode: newConfirmationCode,
+          confirmationCodeExpiry: new Date(Date.now() + 24 * 60 * 60 * 1000)
         },
         
       )
@@ -60,7 +64,7 @@ export class UsersRepository {
       const result = await this.repository.update(
         {id},
         {
-          password_hash: passwordHash,
+          passwordHash: passwordHash,
         },
         
       )
@@ -76,8 +80,8 @@ export class UsersRepository {
       const result = await this.repository.update(
         {id},
         {
-          confirmation_code: null,
-          confirmation_code_expiry: null
+          confirmationCode: null,
+          confirmationCodeExpiry: null
         },
         
       )
@@ -92,6 +96,7 @@ export class UsersRepository {
     try {
       const result = await this.repository.findOneBy({
         id: id,
+        deletedAt: IsNull()
       });
       
       return result;
@@ -112,6 +117,7 @@ export class UsersRepository {
   async findByLogin(login: string): Promise<User | null> {
     const result = await this.repository.findOneBy({
       login: login,
+      deletedAt: IsNull(),
     })
     
     return result;
@@ -120,6 +126,7 @@ export class UsersRepository {
   async findByEmail(email: string): Promise<User | null> {
     const result = await this.repository.findOneBy({
       email: email,
+      deletedAt: IsNull()
     })
     
     return result;
@@ -138,7 +145,8 @@ export class UsersRepository {
 
   async findByConfirmationCode(code: string): Promise<User | null> {
     const result = await this.repository.findOneBy({
-      confirmation_code: code,
+      confirmationCode: code,
+      deletedAt: IsNull()
     })
     
     return result;
@@ -149,7 +157,7 @@ export class UsersRepository {
     const result = await this.repository.find({
       order:
         {
-          created_at: "DESC",
+          createdAt: "DESC",
         },
       take: limit,
       skip: skip,

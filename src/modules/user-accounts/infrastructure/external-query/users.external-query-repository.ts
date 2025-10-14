@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from 'src/modules/database/database.service';
 import { User } from '../../domain/user.entity';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
@@ -13,6 +13,7 @@ export class UsersExternalQueryRepository {
     try {
       const result = await this.repository.findOneBy({
         id: id,
+        deletedAt: IsNull()
       });
       
       return result;
@@ -33,6 +34,7 @@ export class UsersExternalQueryRepository {
   async findByLogin(login: string): Promise<User | null> {
     const result = await this.repository.findOneBy({
       login: login,
+      deletedAt: IsNull()
     })
     
     return result;
@@ -41,6 +43,7 @@ export class UsersExternalQueryRepository {
   async findByEmail(email: string): Promise<User | null> {
     const result = await this.repository.findOneBy({
       email: email,
+      deletedAt: IsNull()
     })
     
     return result;
@@ -59,7 +62,8 @@ export class UsersExternalQueryRepository {
 
   async findByConfirmationCode(code: string): Promise<User | null> {
     const result = await this.repository.findOneBy({
-      confirmation_code: code,
+      confirmationCode: code,
+      deletedAt: IsNull()
     })
     
     return result;
@@ -70,7 +74,7 @@ export class UsersExternalQueryRepository {
     const result = await this.repository.find({
       order:
         {
-          created_at: "DESC",
+          createdAt: "DESC",
         },
       take: limit,
       skip: skip,

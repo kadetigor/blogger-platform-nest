@@ -1,6 +1,8 @@
-import { Column, CreateDateColumn, DeleteDateColumn, Entity, PrimaryColumn, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { SecurityDevice } from "./security-devices.entity";
+import { RefreshTokenSession } from "./refresh-token.entity";
 
-@Entity()
+@Entity('users')
 export class User {
     @PrimaryGeneratedColumn('uuid')
     id: string
@@ -11,51 +13,62 @@ export class User {
     @Column()
     login: string
 
-    @Column()
-    password_hash: string
+    @Column({ name: 'password_hash' })
+    passwordHash: string
 
-    @Column({default: false})
-    is_email_confirmed: boolean
+    @Column({ name: 'is_email_confirmed', default: false })
+    isEmailConfirmed: boolean
 
-    @Column({default: null})
-    confirmation_code: string | null
+    @Column({ 
+        name: 'confirmation_code', 
+        type: 'varchar',  // <-- Add explicit type
+        nullable: true,
+        default: null 
+    })
+    confirmationCode: string | null
 
-    @Column({default: null})
-    confirmation_code_expiry: Date | null
+    @Column({ 
+        name: 'confirmation_code_expiry', 
+        type: 'timestamp',  // <-- Add explicit type
+        nullable: true,
+        default: null 
+    })
+    confirmationCodeExpiry: Date | null
 
-    @CreateDateColumn()
-    created_at: Date
+    @CreateDateColumn({ name: 'created_at' })
+    createdAt: Date
 
-    @UpdateDateColumn()
-    updated_at: Date | null
+    @UpdateDateColumn({ name: 'updated_at' })
+    updatedAt: Date | null
 
-    @DeleteDateColumn()
-    deleted_at: Date | null
+    @DeleteDateColumn({ name: 'deleted_at' })
+    deletedAt: Date | null
 
-  
-  // Business logic methods
-  confirmEmail(code: string): boolean {
-    if (this.confirmation_code !== code) {
-      return false;
+    // ONE User has MANY SecurityDevices
+    @OneToMany(() => SecurityDevice, (device) => device.user)
+    devices: SecurityDevice[];
+
+    @OneToMany(() => RefreshTokenSession, (session) => session.user)
+    session: RefreshTokenSession[];
+
+    // Business logic methods remain the same
+    confirmEmail(code: string): boolean {
+        if (this.confirmationCode !== code) {
+            return false;
+        }
+        
+        if (this.confirmationCodeExpiry && new Date() > this.confirmationCodeExpiry) {
+            return false;
+        }
+        
+        this.isEmailConfirmed = true;
+        this.confirmationCode = null;
+        this.confirmationCodeExpiry = null;
+        return true;
     }
     
-    if (this.confirmation_code_expiry && new Date() > this.confirmation_code_expiry) {
-      return false;
+    setConfirmationCode(code: string): void {
+        this.confirmationCode = code;
+        this.confirmationCodeExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
     }
-    
-    this.is_email_confirmed = true;
-    this.confirmation_code = null;
-    this.confirmation_code_expiry = null;
-    return true;
-  }
-  
-  setConfirmationCode(code: string): void {
-    this.confirmation_code = code;
-    this.confirmation_code_expiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
-  }
-  
 }
-
-// Type exports for compatibility
-// export type UserDocument = User;
-// export type UserModelType = typeof User;

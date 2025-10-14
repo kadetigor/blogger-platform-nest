@@ -1,15 +1,16 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { User } from "./user.entity";
 
-@Entity()
+@Entity('security_devices')
 export class SecurityDevice {
     @PrimaryGeneratedColumn('uuid')
     id: string
 
-    @Column()
-    user_id: string;
+    @Column({ name: 'user_id' })
+    userId: string;
 
-    @Column()
-    device_id: string;
+    @Column({ name: 'device_id' })
+    deviceId: string;
 
     @Column()
     ip: string;
@@ -17,12 +18,17 @@ export class SecurityDevice {
     @Column()
     title: string;
 
-    @Column({ default: Date.now })
-    last_active_date: Date;
+    @Column({ name: 'last_active_date', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    lastActiveDate: Date;
 
-    @Column()
-    expires_at: Date;
+    @Column({ name: 'expires_at', type: 'timestamp' })
+    expiresAt: Date;
 
-    @Column({ nullable: true })
-    deleted_at: Date | null;
+    @DeleteDateColumn({ name: 'deleted_at' })
+    deletedAt: Date | null;
+
+    // MANY SecurityDevices belong to ONE User
+    @ManyToOne(() => User, (user) => user.devices)
+    @JoinColumn({ name: 'user_id' }) // This specifies the foreign key column
+    user: User;
 }

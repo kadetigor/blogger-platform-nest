@@ -16,7 +16,7 @@ export class SecurityDevicesService {
 
     async createDeviceWithId(userId: string, deviceId: string, ip: string, header: string): Promise<void> {
         const userAgent = await this.parseUserAgent(header)
-        const refreshTime = this.configService.get('REFRESH_TIME') as number
+        const refreshTime = parseInt(this.configService.get('REFRESH_TIME') || '20', 10)
 
         // Create the device using the static factory method
         const dto: CreateSecuretyDeviceDto = {
@@ -79,7 +79,7 @@ export class SecurityDevicesService {
     }
     
     // Check if this device belongs to the specified user
-    return device.user_id === userId
+    return device.userId === userId
   }
 
   async getAllUserDevices(userId: string): Promise<SecurityDevice[] | undefined> {
@@ -133,7 +133,7 @@ export class SecurityDevicesService {
     if (!device) {
         return false; // Device not found
     }
-    if (device.user_id !== userId) {
+    if (device.userId !== userId) {
         return false;
     }
     return true;

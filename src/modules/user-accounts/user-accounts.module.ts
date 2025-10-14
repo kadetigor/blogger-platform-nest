@@ -5,9 +5,7 @@ import { UsersService } from './application/users.service';
 import { UsersRepository } from './infrastructure/users.repository';
 import { UsersQueryRepository } from './infrastructure/query/users.query-repository';
 import { AuthController } from './api/auth.controller'
-import { AuthQueryRepository } from './infrastructure/query/auth.query-repository';
 import { UsersExternalQueryRepository } from './infrastructure/external-query/users.external-query-repository';
-import { UsersExternalService } from './application/users.external-service';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { AuthService } from './application/auth.service';
 import { JwtModule } from '@nestjs/jwt';
@@ -44,17 +42,15 @@ import { SecurityDevice } from './domain/security-devices.entity';
     UsersService,
     UsersRepository,
     UsersQueryRepository,
-    AuthQueryRepository,
     AuthService,
     JwtStrategy,
     RefreshTokenStrategy,
     CryptoService,
     UsersExternalQueryRepository,
-    UsersExternalService,
     SecurityDevicesRepository,
     SecurityDevicesService,
     RefreshTokenSessionsRepository
   ],
-  exports: [UsersExternalQueryRepository, UsersExternalService, JwtModule],
+  exports: [UsersExternalQueryRepository, JwtModule],
 })
 export class UserAccountsModule {}

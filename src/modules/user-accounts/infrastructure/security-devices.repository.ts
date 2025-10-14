@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SecurityDevice } from '../domain/security-devices.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Not, Repository } from 'typeorm';
+import { IsNull, Not, Repository } from 'typeorm';
 import { CreateSecuretyDeviceDto } from '../domain/dto/create-security-device.dto';
 
 @Injectable()
@@ -10,12 +10,12 @@ export class SecurityDevicesRepository {
     constructor(@InjectRepository(SecurityDevice) private repository: Repository<SecurityDevice>){}
 
     async createDevice(dto: CreateSecuretyDeviceDto, refreshTime: number): Promise<SecurityDevice> {
-        const device = await this.repository.create({
-            user_id: dto.userId,
-            device_id: dto.deviceId,
+        const device = this.repository.create({
+            userId: dto.userId,
+            deviceId: dto.deviceId,
             ip: dto.ip,
             title: dto.title,
-            expires_at: new Date(Date.now() + refreshTime)
+            expiresAt: new Date(Date.now() + refreshTime * 1000)
         })
 
         return this.repository.save(device)
@@ -24,7 +24,8 @@ export class SecurityDevicesRepository {
     async findByDeviceId(deviceId: string): Promise<SecurityDevice | null> {
         try {
             const result = await this.repository.findOneBy({
-                id: deviceId,
+                deviceId: deviceId,
+                deletedAt: IsNull()
             });
             
             return result;
@@ -36,21 +37,24 @@ export class SecurityDevicesRepository {
     
     async findDevicesByUserId(userId: string): Promise<SecurityDevice[]> {
         const result = await this.repository.find({
-            order:
-                {
-                last_active_date: "DESC",
-                },
+            where: {
+                userId: userId,
+                deletedAt: IsNull()
+            },
+            order:{
+                lastActiveDate: "DESC",
+            },
         })
 
         return result;
     }
 
-    async updateLastActiveDate(id: string, lastActiveDate: Date): Promise<boolean> {
+    async updateLastActiveDate(deviceId: string, lastActiveDate: Date): Promise<boolean> {
         try {
             const result = await this.repository.update(
-                {id},
+                {deviceId},
                 {
-                    last_active_date: lastActiveDate
+                    lastActiveDate: lastActiveDate
                 }
             )
 
@@ -60,9 +64,9 @@ export class SecurityDevicesRepository {
         }
     }
 
-    async deleteByDeviceId(id: string): Promise<void> {
+    async deleteByDeviceId(deviceId: string): Promise<void> {
         try {
-            await this.repository.softDelete({id})
+            await this.repository.softDelete({deviceId})
         } catch (error) {
             throw new NotFoundException
         }
@@ -72,8 +76,8 @@ export class SecurityDevicesRepository {
         try {
             const result = await this.repository.softDelete(
                 {
-                    user_id: userId,
-                    id: Not(deviceIdToKeep)
+                    userId: userId,
+                    deviceId: Not(deviceIdToKeep)
                 },
             )
 
@@ -87,7 +91,7 @@ export class SecurityDevicesRepository {
         try {
             const result = await this.repository.softDelete(
                 {
-                    user_id: userId,
+                    userId: userId,
                 },
             )
 

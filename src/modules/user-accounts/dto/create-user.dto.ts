@@ -24,6 +24,6 @@ export class UpdateUserDto {
 
 export class CreateUserDomainDto {
   login: string;
-  password_hash: string;
+  passwordHash: string;
   email: string;
 }

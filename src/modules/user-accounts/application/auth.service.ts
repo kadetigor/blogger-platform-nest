@@ -64,7 +64,7 @@ export class AuthService {
     //   return null;
     // }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
 
     if (!isPasswordValid) {
       return null;
@@ -144,13 +144,14 @@ export class AuthService {
       const user = await this.usersRepository.createUser({
         email: dto.email,
         login: dto.login,
-        password_hash: passwordHash,
+        passwordHash: passwordHash,
       });
 
       // Generate and save confirmation code
       const confirmationCode = randomUUID();
       user.setConfirmationCode(confirmationCode);
 
+      await this.usersRepository.save(user);
 
       console.log(`Generated confirmation code for ${user.email}: ${confirmationCode}`);
 
@@ -176,7 +177,7 @@ export class AuthService {
       throw new BadRequestException({ errorsMessages: [{ field: 'code', message: 'User was not found' }] });
     }
 
-    if (user.is_email_confirmed) {
+    if (user.isEmailConfirmed) {
       throw new BadRequestException({ errorsMessages: [{ field: 'email', message: 'Email already confirmed' }] });
     }
 
@@ -185,6 +186,8 @@ export class AuthService {
     if (!confirmed) {
       throw new BadRequestException({ errorsMessages: [{ field: 'code', message: 'Code expired or invalid' }] });
     }
+
+    await this.usersRepository.save(user);
 
     return { success: true };
   }
@@ -196,7 +199,7 @@ export class AuthService {
       throw new BadRequestException({ errorsMessages: [{ field: 'email', message: 'User was not found' }] });
     }
 
-    if (user.is_email_confirmed) {
+    if (user.isEmailConfirmed) {
       throw new BadRequestException({ errorsMessages: [{ field: 'email', message: 'Email already confirmed' }] });
     }
 
@@ -206,6 +209,8 @@ export class AuthService {
       user.setConfirmationCode(confirmationCode);
 
       console.log(`Generated new confirmation code for ${email}: ${confirmationCode}`);
+
+      await this.usersRepository.save(user);
 
       // Send confirmation email
       await this.emailService.sendConfirmationEmail(email, confirmationCode);

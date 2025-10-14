@@ -1,46 +1,38 @@
-import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { HydratedDocument, Model } from "mongoose";
-import { CreateRefreshTokenSessionDto } from "./dto/create-refresh-token-session.dto";
-import { add } from 'date-fns'
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { User } from "./user.entity";
 
-
-@Schema({ timestamps: true }) 
+@Entity('refresh_token_sessions')
 export class RefreshTokenSession {
-    @Prop({ type: String, required: true })
-    userId: string;
+  @PrimaryGeneratedColumn('uuid')
+  id: string
 
-    @Prop({ type: String, required: true })
-    tokenId: string;
+  @Column({ name: 'user_id' })
+  userId: string;
 
-    @Prop({ type: String, required: true })
-    deviceId: string;
+  @Column({ name: 'token_id' })
+  tokenId: string;
 
-    @Prop({ type: Boolean, required: true })
-    isRevoked: boolean;
+  @Column({ name: 'device_id' })
+  deviceId: string;
 
-    @Prop({ type: Date, required: true })
-    expiresAt: Date;
+  @Column({ name: 'is_revoked', default: false })
+  isRevoked: boolean;
 
-    static createInstance(dto: CreateRefreshTokenSessionDto, refreshTime: number): RefreshTokenSessionDocument {
-      const session = new this();
-      session.userId = dto.userId;
-      session.tokenId = dto.tokenId;
-      session.deviceId = dto.deviceId;
-      session.isRevoked = false;
-      session.expiresAt = add(new Date(), { seconds: refreshTime })
-  
-      return session as RefreshTokenSessionDocument;
-    }
+  @Column({ name: 'expires_at', type: 'timestamp' })
+  expiresAt: Date;
+
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date
+
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt: Date | null
+
+  @DeleteDateColumn({ name: 'deleted_at' })
+  deletedAt: Date | null
+
+  // MANY Sessions belong to ONE User
+    @ManyToOne(() => User, (user) => user.session)
+    @JoinColumn({ name: 'user_id' }) // This specifies the foreign key column
+    user: User;
+
 }
-
-export const RefreshTokenSessionSchema = SchemaFactory.createForClass(RefreshTokenSession);
-
-// Add indexes for common queries
-RefreshTokenSessionSchema.index({ userId: 1, deletedAt: 1 });
-RefreshTokenSessionSchema.index({ deviceId: 1, deletedAt: 1 });
-
-RefreshTokenSessionSchema.loadClass(RefreshTokenSession);
-
-export type RefreshTokenSessionDocument = HydratedDocument<RefreshTokenSession>;
-
-export type RefreshTokenSessionModelType = Model<RefreshTokenSession> & typeof RefreshTokenSession;

@@ -4,7 +4,7 @@ import { GetUsersQueryParams } from "../../api/input-dto/get-users-query-params.
 import { UsersSortBy } from "../../api/input-dto/users-sort-by";
 import { SortDirection } from "src/core/dto/base.query-params.input-dto";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { FindOptionsWhere, ILike, IsNull, Repository } from "typeorm";
 
 @Injectable()
 export class UsersQueryRepository {
@@ -14,6 +14,7 @@ export class UsersQueryRepository {
     try {
       const result = await this.repository.findOneBy({
         id: id,
+        deletedAt: IsNull()
       });
       
       return result;
@@ -34,6 +35,7 @@ export class UsersQueryRepository {
   async findByLogin(login: string): Promise<User | null> {
     const result = await this.repository.findOneBy({
       login: login,
+      deletedAt: IsNull()
     })
     
     return result;
@@ -42,6 +44,7 @@ export class UsersQueryRepository {
   async findByEmail(email: string): Promise<User | null> {
     const result = await this.repository.findOneBy({
       email: email,
+      deletedAt: IsNull()
     })
     
     return result;
@@ -60,7 +63,8 @@ export class UsersQueryRepository {
 
   async findByConfirmationCode(code: string): Promise<User | null> {
     const result = await this.repository.findOneBy({
-      confirmation_code: code,
+      confirmationCode: code,
+      deletedAt: IsNull()
     })
     
     return result;
@@ -71,12 +75,64 @@ export class UsersQueryRepository {
     const result = await this.repository.find({
       order:
         {
-          created_at: "DESC",
+          createdAt: "DESC",
         },
       take: limit,
       skip: skip,
     })
     
     return result;
+  }
+
+  async getAll(query: GetUsersQueryParams) {
+    const skip = query.calculateSkip();
+    const limit = query.pageSize;
+
+    // Build WHERE conditions with proper typing
+    const whereConditions: FindOptionsWhere<User>[] = [];
+    
+    if (query.searchLoginTerm && query.searchEmailTerm) {
+      whereConditions.push(
+        { login: ILike(`%${query.searchLoginTerm}%`) },
+        { email: ILike(`%${query.searchEmailTerm}%`) }
+      );
+    } else if (query.searchLoginTerm) {
+      whereConditions.push({ login: ILike(`%${query.searchLoginTerm}%`) });
+    } else if (query.searchEmailTerm) {
+      whereConditions.push({ email: ILike(`%${query.searchEmailTerm}%`) });
+    }
+
+    // Build ORDER BY dynamically
+    let orderByColumn: keyof User = 'createdAt';
+    switch (query.sortBy) {
+      case UsersSortBy.Login:
+        orderByColumn = 'login';
+        break;
+      case UsersSortBy.Email:
+        orderByColumn = 'email';
+        break;
+      case UsersSortBy.CreatedAt:
+      default:
+        orderByColumn = 'createdAt';
+        break;
+    }
+
+    // Get both items and count
+    const [users, totalCount] = await this.repository.findAndCount({
+      where: whereConditions.length > 0 ? whereConditions : undefined,
+      order: {
+        [orderByColumn]: query.sortDirection === SortDirection.Asc ? 'ASC' : 'DESC'
+      },
+      skip,
+      take: limit
+    });
+
+    return {
+      items: users,
+      totalCount,
+      page: query.pageNumber,
+      pageSize: query.pageSize,
+      pagesCount: Math.ceil(totalCount / query.pageSize)
+    };
   }
 }
