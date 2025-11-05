@@ -1,4 +1,4 @@
-import { PostDocument } from '../../domain/post.entity';
+import { Post } from '../../domain/post.entity';
 
 // src/modules/blogger-platform/posts/api/view-dto/post.view-dto.ts
 export class PostViewDto {
@@ -17,7 +17,7 @@ export class PostViewDto {
   };
 
   static mapToView(
-    post: PostDocument,
+    post: Post,
     likesInfo?: {
       likesCount: number;
       dislikesCount: number;
