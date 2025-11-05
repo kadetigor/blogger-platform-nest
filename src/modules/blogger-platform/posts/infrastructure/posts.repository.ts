@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { Post } from '../domain/post.entity';
 import { CreatePostInputDto } from '../api/input-dto/post.input-dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -9,7 +9,11 @@ export class PostsRepository {
   constructor(@InjectRepository(Post) private repository: Repository<Post>) {}
 
   async save(post: Post): Promise<Post> {
-    return this.repository.save(post);
+    try {
+      return this.repository.save(post);
+    } catch (error) {
+      throw new ServiceUnavailableException('unable to save to Database')
+    } 
   }
 
   async createPost(dto: CreatePostInputDto): Promise<Post> {
@@ -19,11 +23,11 @@ export class PostsRepository {
       content: dto.content,
       blogId: dto.blogId
     })
-
+  
     return this.repository.save(post)
   }
 
-  async updatePost(id: string, dto: CreatePostInputDto & { blogName?: string }): Promise<Post> {
+  async updatePost(id: string, dto: CreatePostInputDto & { blogName?: string }): Promise<void> {
     await this.repository.update({id}, dto)
 
     const updatedPost = await this.findPostById(id);
@@ -31,7 +35,7 @@ export class PostsRepository {
     if (!updatedPost) {
       throw new NotFoundException
     } else {
-      return updatedPost
+      return
     }
   }
 

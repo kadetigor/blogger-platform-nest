@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { CreatePostDto } from '../dto/create-post.dto';
 import { Post } from '../domain/post.entity';
 import { PostsRepository } from '../infrastructure/posts.repository';
 import { BlogsExternalQueryRepository } from '../../blogs/infrastructure/external-query/blogs.external-query-repository';
@@ -19,14 +18,11 @@ export class PostsService {
       dto.blogId,
     );
 
-    const post = Post.createInstance({
-      title: dto.title,
-      shortDescription: dto.shortDescription,
-      content: dto.content,
-      blogId: dto.blogId,
-    }, dto.blogId, blog.name);
+    const post = await this.postsRepository.createPost(dto);
 
-    return this.postsRepository.createPost(post);
+    const result = 
+
+    return 
   }
 
   async updatePost(id: string, dto: CreatePostInputDto): Promise<void> {

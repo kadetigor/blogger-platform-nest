@@ -3,7 +3,6 @@ import { Post } from '../../domain/post.entity';
 import { PostViewDto } from '../../api/view-dto/post.view-dto';
 import { PaginatedViewDto } from 'src/core/dto/base.paginated.view-dto';
 import { GetPostsQueryParams } from '../../api/input-dto/get-posts-query-params.input-dto';
-import { DatabaseService } from 'src/modules/database/database.service';
 import { PostsSortBy } from '../../api/input-dto/posts-sort-by';
 import { SortDirection } from 'src/core/dto/base.query-params.input-dto';
 import { PostLikeRepository } from '../posts-likes.repository';
