@@ -1,42 +1,82 @@
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { CreatePostInputDto } from "../api/input-dto/post.input-dto";
+import { Blog } from "../../blogs/domain/blog.entity";
+import { User } from "src/modules/user-accounts/domain/user.entity";
 
 
+@Entity('posts')
 export class Post {
-  constructor(
-    public id: string,
-    public title: string,
-    public shortDescription: string,
-    public content: string,
-    public blogId?: string,
-    public blogName?: string,
-    public createdAt: Date = new Date(),
-    public updatedAt: Date = new Date(),
-    public deletedAt: Date | null = null
-  ) {}
+  
+  @PrimaryGeneratedColumn('uuid')
+  id: string
 
-  makeDeleted(): void {
-    this.deletedAt = new Date();
-  }
+  @Column()
+  title: string
 
-  update(updates: Partial<Post>): void {
-    if (updates.title) this.title = updates.title;
-    if (updates.shortDescription) this.shortDescription = updates.shortDescription;
-    if (updates.content) this.content = updates.content;
-    this.updatedAt = new Date();
-  }
+  @Column({ name: 'short_description' })
+  shortDescription: string
 
-  static createInstance(dto: CreatePostInputDto, blogId: string, blogName: string): Post {
-    return new Post(
-      '',
-      dto.title,
-      dto.shortDescription,
-      dto.content,
-      blogId,
-      blogName
-    );
-  }
+  @Column()
+  content: string
+
+  @Column({ name: 'blog_id' })
+  blogId: string
+
+  @Column({ name: 'blog_name', nullable: true })
+  blogName: string
+  
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date
+
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt: Date | null
+
+  @DeleteDateColumn({ name: 'deleted_at' })
+  deletedAt: Date | null
+
+
+  @ManyToOne(() => Blog, (blog) => blog.posts)
+  @JoinColumn({ name: 'blog_id' })
+  blog: Blog
 }
 
-// Type exports for compatibility
-export type PostDocument = Post;
-export type PostModelType = typeof Post;
+
+// export class Post {
+//   constructor(
+//     public id: string,
+//     public title: string,
+//     public shortDescription: string,
+//     public content: string,
+//     public blogId?: string,
+//     public blogName?: string,
+//     public createdAt: Date = new Date(),
+//     public updatedAt: Date = new Date(),
+//     public deletedAt: Date | null = null
+//   ) {}
+
+//   makeDeleted(): void {
+//     this.deletedAt = new Date();
+//   }
+
+//   update(updates: Partial<Post>): void {
+//     if (updates.title) this.title = updates.title;
+//     if (updates.shortDescription) this.shortDescription = updates.shortDescription;
+//     if (updates.content) this.content = updates.content;
+//     this.updatedAt = new Date();
+//   }
+
+//   static createInstance(dto: CreatePostInputDto, blogId: string, blogName: string): Post {
+//     return new Post(
+//       '',
+//       dto.title,
+//       dto.shortDescription,
+//       dto.content,
+//       blogId,
+//       blogName
+//     );
+//   }
+// }
+
+// // Type exports for compatibility
+// export type PostDocument = Post;
+// export type PostModelType = typeof Post;

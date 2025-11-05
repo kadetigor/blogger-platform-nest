@@ -16,10 +16,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
       isGlobal: true, // Makes the ConfigModule available throughout the app
       envFilePath: '.env', // Specify the path to your .env file
     }),
-    ThrottlerModule.forRoot([{
-      ttl: 10000, // 10 seconds in milliseconds
-      limit: 5, // 5 requests per TTL window
-    }]),
+    // ThrottlerModule.forRoot([{
+    //   ttl: 10000, // 10 seconds in milliseconds
+    //   limit: 5, // 5 requests per TTL window
+    // }]),
     TypeOrmModule.forRoot({
       type: 'postgres',
       url: process.env.DATABASE_URL,
