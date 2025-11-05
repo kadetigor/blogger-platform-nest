@@ -22,8 +22,11 @@ export class PostsRepository {
       title: dto.title,
       shortDescription: dto.shortDescription,
       content: dto.content,
-      blogId: dto.blogId
+      blogId: dto.blogId,
+      blogName: dto.blogName
     })
+
+    const savedPost = await this.repository.save(post)
 
     const likesInfo = {
       likesCount: 0,
@@ -32,9 +35,7 @@ export class PostsRepository {
       newestLikes: []
     } 
 
-    return PostViewDto.mapToView(post, likesInfo)
-  
-    //return this.repository.save(post)
+    return PostViewDto.mapToView(savedPost, likesInfo)
   }
 
   async updatePost(id: string, dto: CreatePostInputDto & { blogName?: string }): Promise<void> {
@@ -50,10 +51,12 @@ export class PostsRepository {
   }
 
   async deletePost(id: string): Promise<void> {
-    try {
-      await this.repository.softDelete({id})
-    } catch (error) {
+    const result = await this.repository.softDelete({id})
+
+    if (result.affected === 0) {
       throw new NotFoundException
+    } else {
+      return
     }
   }
 

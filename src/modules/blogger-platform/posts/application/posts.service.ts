@@ -17,6 +17,8 @@ export class PostsService {
       dto.blogId,
     );
 
+    dto.blogName = blog.name;
+
     const post = await this.postsRepository.createPost(dto);
 
     return post

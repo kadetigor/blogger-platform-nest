@@ -43,17 +43,36 @@ export class BlogsQueryRepository {
         break;
     }
 
-    const [blogs, totalCount] = await this.repository.findAndCount({
-      order: {
-        [orderByColumn]: query.sortDirection === SortDirection.Asc ? 'ASC' : 'DESC'
-      },
-      skip,
-      take: limit
-    });
+    // Build the query with search filters
+    const queryBuilder = this.repository.createQueryBuilder('blog');
 
+    // Apply search filters if provided
+    if (query.searchNameTerm) {
+      queryBuilder.andWhere('blog.name ILIKE :nameTerm', {
+        nameTerm: `%${query.searchNameTerm}%`
+      });
+    }
+
+    if (query.searchDescriptionTerm) {
+      queryBuilder.andWhere('blog.description ILIKE :descriptionTerm', {
+        descriptionTerm: `%${query.searchDescriptionTerm}%`
+      });
+    }
+
+    // Apply sorting
+    queryBuilder.orderBy(
+      `blog.${orderByColumn}`,
+      query.sortDirection === SortDirection.Asc ? 'ASC' : 'DESC'
+    );
+
+    // Apply pagination
+    queryBuilder.skip(skip).take(limit);
+
+    // Execute query
+    const [blogs, totalCount] = await queryBuilder.getManyAndCount();
 
     return PaginatedViewDto.mapToView({
-      items: blogs,
+      items: blogs.map(blog => BlogViewDto.mapToView(blog)),
       totalCount,
       page: query.pageNumber,
       size: query.pageSize,

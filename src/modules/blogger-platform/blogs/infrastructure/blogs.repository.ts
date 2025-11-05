@@ -33,7 +33,7 @@ export class BlogsRepository {
       websiteUrl: dto.websiteUrl
     })
 
-    return this. repository.save(blog);
+    return this.repository.save(blog);
   }
 
   async updateBlog(id: string, dto: CreateBlogInputDto): Promise<Blog> {
@@ -49,10 +49,12 @@ export class BlogsRepository {
   }
 
   async deleteBlog(id: string): Promise<void> {
-    try {
-      await this.repository.softDelete({id})
-    } catch (error) {
+    const result = await this.repository.softDelete({id})
+
+    if (result.affected === 0) {
       throw new NotFoundException
+    } else {
+      return
     }
   }
 }

@@ -25,6 +25,9 @@ export class PostsExternalService {
       throw new Error();
     }
 
+    dto.blogName = blog.name;
+    dto.blogId = blogId; 
+
     const result = await this.postsRepository.createPost(dto);
 
     return result;

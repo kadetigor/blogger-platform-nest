@@ -1,13 +1,11 @@
 // src/modules/blogger-platform/posts/api/input-dto/post.input-dto.ts
-import { IsString, Length, IsMongoId } from 'class-validator';
+import { IsString, Length } from 'class-validator';
 import { CreatePostDto } from '../../dto/create-post.dto';
 import { Trim } from '../../../../../core/decorators/transform/trim';
 
 export class CreatePostInputDto extends CreatePostDto {
-
-  @IsString()
-  @IsMongoId()
   blogId: string;
+  blogName: string;
 }
 
 // Also create an UpdatePostInputDto for PUT requests

@@ -21,7 +21,7 @@ export class TestingController {
     await this.databaseService.sql`TRUNCATE TABLE comments RESTART IDENTITY CASCADE`;
     await this.databaseService.sql`TRUNCATE TABLE comment_likes RESTART IDENTITY CASCADE`;
     await this.databaseService.sql`TRUNCATE TABLE post_likes RESTART IDENTITY CASCADE`;
-    // await this.databaseService.sql`TRUNCATE TABLE comments RESTART IDENTITY CASCADE`;
+    await this.databaseService.sql`TRUNCATE TABLE comments RESTART IDENTITY CASCADE`;
 
     return {
       status: 'succeeded',

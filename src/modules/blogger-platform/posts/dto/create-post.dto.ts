@@ -1,4 +1,4 @@
-import { IsString, Length, IsMongoId } from 'class-validator';
+import { IsString, Length } from 'class-validator';
 import { Trim } from '../../../../core/decorators/transform/trim';
 
 export class CreatePostDto {
