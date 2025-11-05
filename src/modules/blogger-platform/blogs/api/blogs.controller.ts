@@ -24,10 +24,10 @@ import { PostViewDto } from '../../posts/api/view-dto/post.view-dto';
 import { PostsExternalQueryRepository } from '../../posts/infrastructure/external-query/posts.external-query-repository';
 import { GetPostsQueryParams } from '../../posts/api/input-dto/get-posts-query-params.input-dto';
 import { PostsExternalService } from '../../posts/application/posts.external-service';
-import { CreatePostDto } from '../../posts/dto/create-post.dto';
 import { BasicAuthGuard } from 'src/modules/user-accounts/guards/basic/basic.auth-guard';
 import { JwtOptionalAuthGuard } from 'src/modules/user-accounts/guards/bearer/jwt.optional-auth-guard';
 import { RequestWithUser } from 'types/custom-request.interface';
+import { CreatePostInputDto } from '../../posts/api/input-dto/post.input-dto';
 
 @Controller('blogs')
 export class BlogsController {
@@ -50,7 +50,7 @@ export class BlogsController {
   async getAll(
     @Query() query: GetBlogsQueryParams,
   ): Promise<PaginatedViewDto<BlogViewDto[]>> {
-    return this.blogsQueryRepository.getAll(query);
+    return this.blogsQueryRepository.getAllBlogs(query);
   }
 
   @Post()
@@ -104,7 +104,7 @@ export class BlogsController {
   @UseGuards(BasicAuthGuard)
   async createPostForBlog(
     @Param('id') blogId: string,
-    @Body() body: CreatePostDto,
+    @Body() body: CreatePostInputDto,
   ): Promise<PostViewDto> {
     const result = await this.postsExternalService.createPostForBlog(
       blogId,

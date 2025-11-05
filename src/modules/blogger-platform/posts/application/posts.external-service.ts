@@ -15,7 +15,7 @@ export class PostsExternalService {
 
   async createPostForBlog(
     blogId: string,
-    dto: CreatePostDto,
+    dto: CreatePostInputDto,
   ): Promise<PostViewDto> {
     // Fetch the blog to get its name
     const blog =
@@ -25,14 +25,7 @@ export class PostsExternalService {
       throw new Error();
     }
 
-    const post = Post.createInstance({
-      title: dto.title,
-      shortDescription: dto.shortDescription,
-      content: dto.content,
-      blogId: blogId,
-    }, blogId, blog.name);
-
-    const result = await this.postsRepository.createPost(post);
+    const result = await this.postsRepository.createPost(dto);
 
     return result;
   }

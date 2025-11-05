@@ -1,6 +1,5 @@
 import { Post } from '../../domain/post.entity';
 
-// src/modules/blogger-platform/posts/api/view-dto/post.view-dto.ts
 export class PostViewDto {
   id: string;
   title: string;
@@ -12,8 +11,8 @@ export class PostViewDto {
   extendedLikesInfo: {
     dislikesCount: number;
     likesCount: number;
-    myStatus: string;
-    newestLikes: any[];
+    myStatus: "Like" | "Dislike" | "None";
+    newestLikes: Array<{ addedAt: Date; userId: string; login: string; }>
   };
 
   static mapToView(

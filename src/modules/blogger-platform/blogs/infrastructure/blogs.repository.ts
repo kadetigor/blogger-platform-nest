@@ -26,7 +26,7 @@ export class BlogsRepository {
     }
   }
 
-  async createPost(dto: CreateBlogInputDto): Promise<Blog> {
+  async createBlog(dto: CreateBlogInputDto): Promise<Blog> {
     const blog = this.repository.create({
       name: dto.name,
       description: dto.description,
@@ -36,7 +36,7 @@ export class BlogsRepository {
     return this. repository.save(blog);
   }
 
-  async updateBlog(id: string, dto: CreateBlogInputDto): Promise<void> {
+  async updateBlog(id: string, dto: CreateBlogInputDto): Promise<Blog> {
     await this.repository.update({id}, dto)
 
     const updatedBlog = await this.findBlogById(id);
@@ -44,7 +44,7 @@ export class BlogsRepository {
     if (!updatedBlog) {
       throw new NotFoundException
     } else {
-      return
+      return updatedBlog
     }
   }
 

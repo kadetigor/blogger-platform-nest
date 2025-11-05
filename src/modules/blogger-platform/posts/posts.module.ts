@@ -15,6 +15,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 @Module({
   imports: [
+    DatabaseModule,
     TypeOrmModule.forFeature([Post]),
     forwardRef(() => BlogsModule),
     forwardRef(() => CommentsModule),

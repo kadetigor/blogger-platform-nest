@@ -3,6 +3,7 @@ import { Post } from '../domain/post.entity';
 import { CreatePostInputDto } from '../api/input-dto/post.input-dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
+import { PostViewDto } from '../api/view-dto/post.view-dto';
 
 @Injectable()
 export class PostsRepository {
@@ -16,15 +17,24 @@ export class PostsRepository {
     } 
   }
 
-  async createPost(dto: CreatePostInputDto): Promise<Post> {
+  async createPost(dto: CreatePostInputDto): Promise<PostViewDto> {
     const post = this.repository.create({
       title: dto.title,
       shortDescription: dto.shortDescription,
       content: dto.content,
       blogId: dto.blogId
     })
+
+    const likesInfo = {
+      likesCount: 0,
+      dislikesCount: 0,
+      myStatus: 'None' as const,
+      newestLikes: []
+    } 
+
+    return PostViewDto.mapToView(post, likesInfo)
   
-    return this.repository.save(post)
+    //return this.repository.save(post)
   }
 
   async updatePost(id: string, dto: CreatePostInputDto & { blogName?: string }): Promise<void> {

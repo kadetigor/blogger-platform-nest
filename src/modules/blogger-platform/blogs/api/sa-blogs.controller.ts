@@ -25,6 +25,7 @@ import { GetPostsQueryParams } from '../../posts/api/input-dto/get-posts-query-p
 import { PostsExternalService } from '../../posts/application/posts.external-service';
 import { CreatePostDto } from '../../posts/dto/create-post.dto';
 import { BasicAuthGuard } from 'src/modules/user-accounts/guards/basic/basic.auth-guard';
+import { CreatePostInputDto } from '../../posts/api/input-dto/post.input-dto';
 
 @Controller('sa/blogs')
 @UseGuards(BasicAuthGuard)
@@ -42,7 +43,7 @@ export class SaBlogsController {
   async getBlogs(
     @Query() query: GetBlogsQueryParams,
   ): Promise<PaginatedViewDto<BlogViewDto[]>> {
-    return this.blogsQueryRepository.getAll(query);
+    return this.blogsQueryRepository.getAllBlogs(query);
   }
 
   @Post()
@@ -88,7 +89,7 @@ export class SaBlogsController {
   @ApiParam({ name: 'blogId', required: true })
   async createPostForBlog(
     @Param('blogId') blogId: string,
-    @Body() dto: CreatePostDto,
+    @Body() dto: CreatePostInputDto,
   ): Promise<PostViewDto> {
     return this.postsExternalService.createPostForBlog(blogId, dto);
   }

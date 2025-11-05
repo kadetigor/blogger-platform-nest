@@ -13,16 +13,13 @@ export class PostsService {
   ) {}
 
   async createPost(dto: CreatePostInputDto): Promise<PostViewDto> {
-    // Fetch the blog to get its name
     const blog = await this.blogsExternalQueryRepository.getByIdOrNotFoundFail(
       dto.blogId,
     );
 
     const post = await this.postsRepository.createPost(dto);
 
-    const result = 
-
-    return 
+    return post
   }
 
   async updatePost(id: string, dto: CreatePostInputDto): Promise<void> {
