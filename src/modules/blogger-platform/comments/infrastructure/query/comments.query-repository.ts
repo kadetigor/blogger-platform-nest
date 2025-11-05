@@ -1,46 +1,31 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { Comment, CommentDocument } from "../../domain/comment.entity";
-import { CommentatorInfo } from "../../domain/schemas/commentor-info.schema";
-import { DatabaseService } from "src/modules/database/database.service";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, IsNull } from "typeorm";
+import { Comment } from "../../domain/comment.entity";
 
 @Injectable()
 export class CommentsQueryRepository {
-    constructor(private databaseService: DatabaseService) {}
+    constructor(@InjectRepository(Comment) private repository: Repository<Comment>) {}
 
-    private mapToComment(row: any): Comment | null {
-        if (!row) return null;
+    async getByIdOrNotFoundFail(id: string): Promise<Comment & { commentatorInfo: { userId: string; userLogin: string } }> {
+        const comment = await this.repository.findOne({
+            where: {
+                id,
+                deletedAt: IsNull()
+            }
+        });
 
-        return new Comment(
-            row.id,
-            row.content,
-            new CommentatorInfo(
-                row.commentator_user_id,
-                row.commentator_user_login
-            ),
-            row.post_id,
-            row.created_at,
-            row.updated_at,
-            row.deleted_at
-        );
-    }
-
-    async getByIdOrNotFoundFail(id: string): Promise<CommentDocument> {
-        const result = await this.databaseService.sql`
-            SELECT * FROM comments
-            WHERE id = ${id}::uuid
-            AND deleted_at IS NULL
-            LIMIT 1
-        `;
-
-        if (!result[0]) {
-            throw new NotFoundException('comment not found');
-        }
-
-        const comment = this.mapToComment(result[0]);
         if (!comment) {
             throw new NotFoundException('comment not found');
         }
 
-        return comment;
+        // Map to include commentatorInfo for backward compatibility
+        return {
+            ...comment,
+            commentatorInfo: {
+                userId: comment.commentatorUserId,
+                userLogin: comment.commentatorUserLogin
+            }
+        };
     }
 }

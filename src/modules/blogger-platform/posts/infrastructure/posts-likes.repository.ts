@@ -1,9 +1,11 @@
 import { Injectable } from "@nestjs/common";
-import { DatabaseService } from "src/modules/database/database.service";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, IsNull, In } from "typeorm";
+import { PostLike, LikeStatus } from "../domain/post-like.entity";
 
 @Injectable()
 export class PostLikeRepository {
-    constructor(private databaseService: DatabaseService) {}
+    constructor(@InjectRepository(PostLike) private repository: Repository<PostLike>) {}
 
     async setLikeStatus(postId: string, userId: string, status: string, userLogin: string): Promise<void> {
         // Validate required fields
@@ -16,97 +18,78 @@ export class PostLikeRepository {
 
         if (status === "None") {
             // Remove the like/dislike (soft delete)
-            await this.databaseService.sql`
-                UPDATE post_likes
-                SET deleted_at = ${new Date()}
-                WHERE post_id = ${postId}::uuid
-                AND user_id = ${userId}::uuid
-                AND deleted_at IS NULL
-            `;
+            await this.repository.softDelete({
+                postId,
+                userId,
+            });
             return;
         }
 
         // Check if a like/dislike already exists
-        const existing = await this.databaseService.sql`
-            SELECT * FROM post_likes
-            WHERE post_id = ${postId}::uuid
-            AND user_id = ${userId}::uuid
-            AND deleted_at IS NULL
-            LIMIT 1
-        `;
+        const existing = await this.repository.findOne({
+            where: {
+                postId,
+                userId,
+                deletedAt: IsNull()
+            }
+        });
 
-        if (existing[0]) {
+        if (existing) {
             // Update existing like/dislike
-            await this.databaseService.sql`
-                UPDATE post_likes
-                SET
-                    status = ${status},
-                    added_at = ${new Date()},
-                    login = ${userLogin},
-                    updated_at = ${new Date()}
-                WHERE post_id = ${postId}::uuid
-                AND user_id = ${userId}::uuid
-                AND deleted_at IS NULL
-            `;
+            existing.status = status as LikeStatus;
+            existing.addedAt = new Date();
+            existing.login = userLogin;
+            await this.repository.save(existing);
         } else {
             // Insert new like/dislike
-            await this.databaseService.sql`
-                INSERT INTO post_likes (post_id, user_id, status, added_at, login, created_at, updated_at)
-                VALUES (
-                    ${postId}::uuid,
-                    ${userId}::uuid,
-                    ${status},
-                    ${new Date()},
-                    ${userLogin},
-                    ${new Date()},
-                    ${new Date()}
-                )
-            `;
+            const newLike = this.repository.create({
+                postId,
+                userId,
+                status: status as LikeStatus,
+                addedAt: new Date(),
+                login: userLogin
+            });
+            await this.repository.save(newLike);
         }
     }
 
     async getUserLikeStatus(postId: string, userId: string): Promise<"Like" | "Dislike" | "None"> {
-        const result = await this.databaseService.sql`
-            SELECT status FROM post_likes
-            WHERE post_id = ${postId}::uuid
-            AND user_id = ${userId}::uuid
-            AND deleted_at IS NULL
-            LIMIT 1
-        `;
+        const result = await this.repository.findOne({
+            where: {
+                postId,
+                userId,
+                deletedAt: IsNull()
+            }
+        });
 
-        if (!result[0]) {
+        if (!result) {
             return "None";
         }
-        return result[0].status as "Like" | "Dislike";
+        return result.status as "Like" | "Dislike";
     }
 
     async getLikesCount(postId: string): Promise<number> {
-        const result = await this.databaseService.sql`
-            SELECT COUNT(*) as count FROM post_likes
-            WHERE post_id = ${postId}::uuid
-            AND status = 'Like'
-            AND deleted_at IS NULL
-        `;
-        return parseInt(result[0].count, 10);
+        return await this.repository.count({
+            where: {
+                postId,
+                status: LikeStatus.LIKE,
+                deletedAt: IsNull()
+            }
+        });
     }
 
     async getDislikesCount(postId: string): Promise<number> {
-        const result = await this.databaseService.sql`
-            SELECT COUNT(*) as count FROM post_likes
-            WHERE post_id = ${postId}::uuid
-            AND status = 'Dislike'
-            AND deleted_at IS NULL
-        `;
-        return parseInt(result[0].count, 10);
+        return await this.repository.count({
+            where: {
+                postId,
+                status: LikeStatus.DISLIKE,
+                deletedAt: IsNull()
+            }
+        });
     }
 
     async deleteAllLikesForPost(postId: string): Promise<void> {
-        await this.databaseService.sql`
-            UPDATE post_likes
-            SET deleted_at = ${new Date()}
-            WHERE post_id = ${postId}::uuid
-            AND deleted_at IS NULL
-        `;
+        await this.repository.softDelete({ postId });
     }
 
     async findNewestLikes(postId: string): Promise<Array<{
@@ -114,20 +97,22 @@ export class PostLikeRepository {
         userId: string;
         login: string;
     }>> {
-        const result = await this.databaseService.sql`
-            SELECT added_at, user_id, login
-            FROM post_likes
-            WHERE post_id = ${postId}::uuid
-            AND status = 'Like'
-            AND deleted_at IS NULL
-            ORDER BY added_at DESC
-            LIMIT 3
-        `;
+        const results = await this.repository.find({
+            where: {
+                postId,
+                status: LikeStatus.LIKE,
+                deletedAt: IsNull()
+            },
+            order: {
+                addedAt: 'DESC'
+            },
+            take: 3
+        });
 
-        return result.map(row => ({
-            addedAt: row.added_at,
-            userId: row.user_id,
-            login: row.login
+        return results.map(like => ({
+            addedAt: like.addedAt,
+            userId: like.userId,
+            login: like.login
         }));
     }
 
@@ -162,84 +147,86 @@ export class PostLikeRepository {
             return new Map();
         }
 
-        // Single query to get all likes/dislikes counts and user statuses
-        const statsQuery = userId
-            ? this.databaseService.sql`
-                SELECT
-                    post_id,
-                    COUNT(CASE WHEN status = 'Like' THEN 1 END) as likes_count,
-                    COUNT(CASE WHEN status = 'Dislike' THEN 1 END) as dislikes_count,
-                    MAX(CASE WHEN user_id = ${userId}::uuid THEN status ELSE NULL END) as my_status
-                FROM post_likes
-                WHERE post_id = ANY(${postIds.map(id => id)}::uuid[])
-                AND deleted_at IS NULL
-                GROUP BY post_id
-            `
-            : this.databaseService.sql`
-                SELECT
-                    post_id,
-                    COUNT(CASE WHEN status = 'Like' THEN 1 END) as likes_count,
-                    COUNT(CASE WHEN status = 'Dislike' THEN 1 END) as dislikes_count
-                FROM post_likes
-                WHERE post_id = ANY(${postIds.map(id => id)}::uuid[])
-                AND deleted_at IS NULL
-                GROUP BY post_id
-            `;
+        // Get all likes for the given posts
+        const allLikes = await this.repository.find({
+            where: {
+                postId: In(postIds),
+                deletedAt: IsNull()
+            }
+        });
 
-        // Single query to get newest 3 likes for all posts
-        const newestLikesQuery = this.databaseService.sql`
-            SELECT post_id, added_at, user_id, login
-            FROM (
-                SELECT
-                    post_id,
-                    added_at,
-                    user_id,
-                    login,
-                    ROW_NUMBER() OVER (PARTITION BY post_id ORDER BY added_at DESC) as rn
-                FROM post_likes
-                WHERE post_id = ANY(${postIds.map(id => id)}::uuid[])
-                AND status = 'Like'
-                AND deleted_at IS NULL
-            ) ranked
-            WHERE rn <= 3
-            ORDER BY post_id, added_at DESC
-        `;
-
-        const [stats, newestLikes] = await Promise.all([statsQuery, newestLikesQuery]);
-
-        // Build a map of postId -> likes info
-        const statsMap = new Map(
-            stats.map(row => [
-                row.post_id,
-                {
-                    likesCount: parseInt(row.likes_count, 10),
-                    dislikesCount: parseInt(row.dislikes_count, 10),
-                    myStatus: (row.my_status as "Like" | "Dislike") || "None"
-                }
+        // Get newest likes for each post
+        const newestLikesQuery = this.repository
+            .createQueryBuilder('pl')
+            .select([
+                'pl.postId as post_id',
+                'pl.addedAt as added_at',
+                'pl.userId as user_id',
+                'pl.login as login'
             ])
-        );
+            .where('pl.postId IN (:...postIds)', { postIds })
+            .andWhere('pl.status = :status', { status: LikeStatus.LIKE })
+            .andWhere('pl.deletedAt IS NULL')
+            .orderBy('pl.postId', 'ASC')
+            .addOrderBy('pl.addedAt', 'DESC');
 
-        // Build a map of postId -> newest likes array
+        const newestLikesRaw = await newestLikesQuery.getRawMany();
+
+        // Build a map of postId -> newest likes array (limit to 3 per post)
         const newestLikesMap = new Map<string, Array<{ addedAt: Date; userId: string; login: string; }>>();
-        for (const like of newestLikes) {
+        for (const like of newestLikesRaw) {
             if (!newestLikesMap.has(like.post_id)) {
                 newestLikesMap.set(like.post_id, []);
             }
-            newestLikesMap.get(like.post_id)!.push({
-                addedAt: like.added_at,
-                userId: like.user_id,
-                login: like.login
+            const likesArray = newestLikesMap.get(like.post_id)!;
+            if (likesArray.length < 3) {
+                likesArray.push({
+                    addedAt: like.added_at,
+                    userId: like.user_id,
+                    login: like.login
+                });
+            }
+        }
+
+        // Build stats map from all likes
+        const statsMap = new Map<string, {
+            likesCount: number;
+            dislikesCount: number;
+            myStatus: "Like" | "Dislike" | "None";
+        }>();
+
+        // Group likes by postId
+        const likesByPost = new Map<string, PostLike[]>();
+        for (const like of allLikes) {
+            if (!likesByPost.has(like.postId)) {
+                likesByPost.set(like.postId, []);
+            }
+            likesByPost.get(like.postId)!.push(like);
+        }
+
+        // Calculate stats for each post
+        for (const postId of postIds) {
+            const likes = likesByPost.get(postId) || [];
+            const likesCount = likes.filter(l => l.status === LikeStatus.LIKE).length;
+            const dislikesCount = likes.filter(l => l.status === LikeStatus.DISLIKE).length;
+            const userLike = userId ? likes.find(l => l.userId === userId) : null;
+            const myStatus = userLike ? (userLike.status as "Like" | "Dislike") : "None";
+
+            statsMap.set(postId, {
+                likesCount,
+                dislikesCount,
+                myStatus
             });
         }
 
         // Combine into final result
         const result = new Map();
         for (const postId of postIds) {
-            const stats = statsMap.get(postId);
+            const stats = statsMap.get(postId) || { likesCount: 0, dislikesCount: 0, myStatus: "None" as const };
             result.set(postId, {
-                likesCount: stats?.likesCount || 0,
-                dislikesCount: stats?.dislikesCount || 0,
-                myStatus: stats?.myStatus || "None",
+                likesCount: stats.likesCount,
+                dislikesCount: stats.dislikesCount,
+                myStatus: stats.myStatus,
                 newestLikes: newestLikesMap.get(postId) || []
             });
         }

@@ -1,7 +1,8 @@
-import { Column, CreateDateColumn, DeleteDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { CreatePostInputDto } from "../api/input-dto/post.input-dto";
 import { Blog } from "../../blogs/domain/blog.entity";
 import { User } from "src/modules/user-accounts/domain/user.entity";
+import { PostLike } from "./post-like.entity";
 
 
 @Entity('posts')
@@ -38,6 +39,9 @@ export class Post {
   @ManyToOne(() => Blog, (blog) => blog.posts)
   @JoinColumn({ name: 'blog_id' })
   blog: Blog
+
+  @OneToMany(() => PostLike, (post_likes) => post_likes.post)
+  post_likes: PostLike[]
 }
 
 

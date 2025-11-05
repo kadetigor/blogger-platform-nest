@@ -12,11 +12,12 @@ import { DatabaseModule } from 'src/modules/database/database.module';
 import { PostLikeRepository } from './infrastructure/posts-likes.repository';
 import { CommentsModule } from '../comments/comments.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { PostLike } from './domain/post-like.entity';
 
 @Module({
   imports: [
     DatabaseModule,
-    TypeOrmModule.forFeature([Post]),
+    TypeOrmModule.forFeature([Post, PostLike]),
     forwardRef(() => BlogsModule),
     forwardRef(() => CommentsModule),
     UserAccountsModule

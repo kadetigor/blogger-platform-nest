@@ -1,43 +1,21 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, IsNull } from "typeorm";
 import { Comment, CommentDocument } from "../domain/comment.entity";
-import { CommentatorInfo } from "../domain/schemas/commentor-info.schema";
 import { UpdateCommentDto } from "../dto/update-comment.dto";
-import { DatabaseService } from "src/modules/database/database.service";
 
 @Injectable()
 export class CommentsRepository {
-  constructor(private databaseService: DatabaseService) {}
-
-  private mapToComment(row: any): Comment | null {
-    if (!row) return null;
-
-    return new Comment(
-      row.id,
-      row.content,
-      new CommentatorInfo(
-        row.commentator_user_id,
-        row.commentator_user_login
-      ),
-      row.post_id,
-      row.created_at,
-      row.updated_at,
-      row.deleted_at
-    );
-  }
+  constructor(@InjectRepository(Comment) private repository: Repository<Comment>) {}
 
   async findByIdOrFail(id: string): Promise<CommentDocument> {
-    const result = await this.databaseService.sql`
-      SELECT * FROM comments
-      WHERE id = ${id}::uuid
-      AND deleted_at IS NULL
-      LIMIT 1
-    `;
+    const comment = await this.repository.findOne({
+      where: {
+        id,
+        deletedAt: IsNull()
+      }
+    });
 
-    if (!result[0]) {
-      throw new NotFoundException('Comment does not exist');
-    }
-
-    const comment = this.mapToComment(result[0]);
     if (!comment) {
       throw new NotFoundException('Comment does not exist');
     }
@@ -46,61 +24,45 @@ export class CommentsRepository {
   }
 
   async updateComment(id: string, dto: UpdateCommentDto): Promise<void> {
-    const result = await this.databaseService.sql`
-      UPDATE comments
-      SET
-        content = ${dto.content},
-        updated_at = ${new Date()}
-      WHERE id = ${id}::uuid
-      AND deleted_at IS NULL
-      RETURNING *
-    `;
+    const result = await this.repository.update(
+      { id, deletedAt: IsNull() },
+      { content: dto.content }
+    );
 
-    if (!result[0]) {
+    if (result.affected === 0) {
       throw new NotFoundException('Comment does not exist');
     }
   }
 
   async removeComment(id: string): Promise<void> {
-    const result = await this.databaseService.sql`
-      UPDATE comments
-      SET deleted_at = ${new Date()}
-      WHERE id = ${id}::uuid
-      AND deleted_at IS NULL
-      RETURNING *
-    `;
+    const result = await this.repository.softDelete({ id });
 
-    if (!result[0]) {
+    if (result.affected === 0) {
       throw new NotFoundException('Comment does not exist');
     }
   }
 
-  async createComment(newComment: Comment): Promise<CommentDocument> {
+  async createComment(commentData: {
+    content: string;
+    commentatorUserId: string;
+    commentatorUserLogin: string;
+    postId: string;
+  }): Promise<CommentDocument> {
     // Validate required fields
-    if (!newComment.commentatorInfo?.userId) {
-      throw new Error(`commentatorInfo.userId is required but got: ${newComment.commentatorInfo?.userId}`);
+    if (!commentData.commentatorUserId) {
+      throw new Error(`commentatorUserId is required but got: ${commentData.commentatorUserId}`);
     }
-    if (!newComment.postId) {
-      throw new Error(`postId is required but got: ${newComment.postId}`);
+    if (!commentData.postId) {
+      throw new Error(`postId is required but got: ${commentData.postId}`);
     }
 
-    const result = await this.databaseService.sql`
-      INSERT INTO comments (content, commentator_user_id, commentator_user_login, post_id, created_at, updated_at)
-      VALUES (
-        ${newComment.content},
-        ${newComment.commentatorInfo.userId}::uuid,
-        ${newComment.commentatorInfo.userLogin},
-        ${newComment.postId}::uuid,
-        ${newComment.createdAt},
-        ${newComment.updatedAt}
-      )
-      RETURNING *
-    `;
+    const newComment = this.repository.create({
+      content: commentData.content,
+      commentatorUserId: commentData.commentatorUserId,
+      commentatorUserLogin: commentData.commentatorUserLogin,
+      postId: commentData.postId
+    });
 
-    const savedComment = this.mapToComment(result[0]);
-    if (!savedComment) {
-      throw new Error('Failed to create comment');
-    }
-    return savedComment;
+    return await this.repository.save(newComment);
   }
 }

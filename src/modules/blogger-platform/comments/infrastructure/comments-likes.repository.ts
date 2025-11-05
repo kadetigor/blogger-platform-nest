@@ -1,98 +1,83 @@
 import { Injectable } from "@nestjs/common";
-import { DatabaseService } from "src/modules/database/database.service";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, IsNull } from "typeorm";
+import { CommentLike, CommentLikeStatus } from "../domain/comment-like.entity";
 
 @Injectable()
 export class CommentsLikesRepository {
-    constructor(private databaseService: DatabaseService) {}
+    constructor(@InjectRepository(CommentLike) private repository: Repository<CommentLike>) {}
 
     async setLikeStatus(commentId: string, userId: string, status: "Like" | "Dislike" | "None"): Promise<void> {
         if (status === "None") {
             // Remove the like/dislike (soft delete)
-            await this.databaseService.sql`
-                UPDATE comment_likes
-                SET deleted_at = ${new Date()}
-                WHERE comment_id = ${commentId}::uuid
-                AND user_id = ${userId}::uuid
-                AND deleted_at IS NULL
-            `;
+            await this.repository.softDelete({
+                commentId,
+                userId
+            });
             return;
         }
 
         // Check if a like/dislike already exists
-        const existing = await this.databaseService.sql`
-            SELECT * FROM comment_likes
-            WHERE comment_id = ${commentId}::uuid
-            AND user_id = ${userId}::uuid
-            AND deleted_at IS NULL
-            LIMIT 1
-        `;
+        const existing = await this.repository.findOne({
+            where: {
+                commentId,
+                userId,
+                deletedAt: IsNull()
+            }
+        });
 
-        if (existing[0]) {
+        if (existing) {
             // Update existing like/dislike
-            await this.databaseService.sql`
-                UPDATE comment_likes
-                SET status = ${status}, updated_at = ${new Date()}
-                WHERE comment_id = ${commentId}::uuid
-                AND user_id = ${userId}::uuid
-                AND deleted_at IS NULL
-            `;
+            existing.status = status as CommentLikeStatus;
+            await this.repository.save(existing);
         } else {
             // Insert new like/dislike
-            await this.databaseService.sql`
-                INSERT INTO comment_likes (comment_id, user_id, status, created_at, updated_at)
-                VALUES (
-                    ${commentId}::uuid,
-                    ${userId}::uuid,
-                    ${status},
-                    ${new Date()},
-                    ${new Date()}
-                )
-            `;
+            const newLike = this.repository.create({
+                commentId,
+                userId,
+                status: status as CommentLikeStatus
+            });
+            await this.repository.save(newLike);
         }
     }
 
     async getUserLikeStatus(commentId: string, userId: string): Promise<"Like" | "Dislike" | "None"> {
-        const result = await this.databaseService.sql`
-            SELECT status FROM comment_likes
-            WHERE comment_id = ${commentId}::uuid
-            AND user_id = ${userId}::uuid
-            AND deleted_at IS NULL
-            LIMIT 1
-        `;
+        const result = await this.repository.findOne({
+            where: {
+                commentId,
+                userId,
+                deletedAt: IsNull()
+            }
+        });
 
-        if (!result[0]) {
+        if (!result) {
             return "None";
         }
-        return result[0].status as "Like" | "Dislike";
+        return result.status as "Like" | "Dislike";
     }
 
     async getLikesCount(commentId: string): Promise<number> {
-        const result = await this.databaseService.sql`
-            SELECT COUNT(*) as count FROM comment_likes
-            WHERE comment_id = ${commentId}::uuid
-            AND status = 'Like'
-            AND deleted_at IS NULL
-        `;
-        return parseInt(result[0].count, 10);
+        return await this.repository.count({
+            where: {
+                commentId,
+                status: CommentLikeStatus.LIKE,
+                deletedAt: IsNull()
+            }
+        });
     }
 
     async getDislikesCount(commentId: string): Promise<number> {
-        const result = await this.databaseService.sql`
-            SELECT COUNT(*) as count FROM comment_likes
-            WHERE comment_id = ${commentId}::uuid
-            AND status = 'Dislike'
-            AND deleted_at IS NULL
-        `;
-        return parseInt(result[0].count, 10);
+        return await this.repository.count({
+            where: {
+                commentId,
+                status: CommentLikeStatus.DISLIKE,
+                deletedAt: IsNull()
+            }
+        });
     }
 
     async deleteAllLikesForComment(commentId: string): Promise<void> {
-        await this.databaseService.sql`
-            UPDATE comment_likes
-            SET deleted_at = ${new Date()}
-            WHERE comment_id = ${commentId}::uuid
-            AND deleted_at IS NULL
-        `;
+        await this.repository.softDelete({ commentId });
     }
 
     async getLikesInfo(commentId: string, userId?: string): Promise<{
