@@ -1,27 +1,27 @@
 import { Controller, Delete, HttpCode, HttpStatus } from '@nestjs/common';
-import { DatabaseService } from '../database/database.service';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 
 @Controller('testing')
 export class TestingController {
   constructor(
-    private readonly databaseService: DatabaseService,
+    @InjectDataSource() private readonly dataSource: DataSource,
   ) {}
 
   @Delete('all-data')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteAll() {
     // Clear all tables by truncating them
-    await this.databaseService.sql`TRUNCATE TABLE refresh_token_sessions RESTART IDENTITY CASCADE`;
-    await this.databaseService.sql`TRUNCATE TABLE security_devices RESTART IDENTITY CASCADE`;
-    await this.databaseService.sql`TRUNCATE TABLE users RESTART IDENTITY CASCADE`;
+    await this.dataSource.query('TRUNCATE TABLE refresh_token_sessions RESTART IDENTITY CASCADE');
+    await this.dataSource.query('TRUNCATE TABLE security_devices RESTART IDENTITY CASCADE');
+    await this.dataSource.query('TRUNCATE TABLE users RESTART IDENTITY CASCADE');
 
     // Add any other tables you want to clear for testing
-    await this.databaseService.sql`TRUNCATE TABLE blogs RESTART IDENTITY CASCADE`;
-    await this.databaseService.sql`TRUNCATE TABLE posts RESTART IDENTITY CASCADE`;
-    await this.databaseService.sql`TRUNCATE TABLE comments RESTART IDENTITY CASCADE`;
-    await this.databaseService.sql`TRUNCATE TABLE comment_likes RESTART IDENTITY CASCADE`;
-    await this.databaseService.sql`TRUNCATE TABLE post_likes RESTART IDENTITY CASCADE`;
-    await this.databaseService.sql`TRUNCATE TABLE comments RESTART IDENTITY CASCADE`;
+    await this.dataSource.query('TRUNCATE TABLE blogs RESTART IDENTITY CASCADE');
+    await this.dataSource.query('TRUNCATE TABLE posts RESTART IDENTITY CASCADE');
+    await this.dataSource.query('TRUNCATE TABLE comments RESTART IDENTITY CASCADE');
+    await this.dataSource.query('TRUNCATE TABLE comment_likes RESTART IDENTITY CASCADE');
+    await this.dataSource.query('TRUNCATE TABLE post_likes RESTART IDENTITY CASCADE');
 
     return {
       status: 'succeeded',

@@ -9,13 +9,11 @@ import { CommentsExtertalService } from "./application/comments.external-service
 import { CommentsExternalQueryRepository } from "./infrastructure/external/comments.external-query-repository";
 import { CommentsLikesExternalRepository } from "./infrastructure/external/comments-likes.external-repository";
 import { PostsModule } from "../posts/posts.module";
-import { DatabaseModule } from "src/modules/database/database.module";
 import { Comment } from "./domain/comment.entity";
 import { CommentLike } from "./domain/comment-like.entity";
 
 @Module({
   imports: [
-    DatabaseModule,
     TypeOrmModule.forFeature([Comment, CommentLike]),
     forwardRef(() => PostsModule),
   ],
