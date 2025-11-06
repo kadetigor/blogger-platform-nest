@@ -19,7 +19,6 @@ export class UserViewDto {
   }
 }
 
-//https://docs.nestjs.com/openapi/mapped-types
 export class MeViewDto extends OmitType(UserViewDto, [
   'createdAt',
   'id',
