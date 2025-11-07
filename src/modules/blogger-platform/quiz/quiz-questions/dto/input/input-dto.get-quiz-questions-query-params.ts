@@ -1,7 +1,8 @@
 import { IsOptional, IsString, IsEnum } from 'class-validator';
 import { BaseQueryParams } from 'src/core/dto/base.query-params.input-dto';
-import { QuizQuestionSortBy } from './quiz-question-sort-by';
-import { PublishedStatus } from './published-status-enum';
+import { PublishedStatus } from '../published-status-enum';
+import { QuizQuestionSortBy } from '../quiz-question-sort-by';
+
 
 export class GetQuizQuestionsQueryParam extends BaseQueryParams {
   @IsOptional()

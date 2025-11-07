@@ -1,12 +1,13 @@
 import { Controller, Get, Post, Body, Param, Delete, Put, UseGuards, Query, HttpStatus, HttpCode, ParseUUIDPipe } from '@nestjs/common';
-import { QuizQuestionsService } from './quiz-questions.service';
-import { CreateQuizQuestionDto } from './dto/create-quiz-question.dto';
-import { UpdateQuizQuestionDto } from './dto/update-quiz-question.dto';
-import { QuizQuestionsQueryRepository } from './infrastructure/query/quiz-question.query-repository';
 import { BasicAuthGuard } from 'src/modules/user-accounts/guards/basic/basic.auth-guard';
-import { GetQuizQuestionsQueryParam } from './dto/input-dto.get-quiz-questions-query-params';
-import { QuizQuestionViewDto } from './dto/quiz-question.view-dto';
-import { PublishQuizQuestionDto } from './dto/publish-quiz-question.dto';
+import { QuizQuestionsService } from '../application/quiz-questions.service';
+import { QuizQuestionsQueryRepository } from '../infrastructure/query/quiz-question.query-repository';
+import { GetQuizQuestionsQueryParam } from '../dto/input/input-dto.get-quiz-questions-query-params';
+import { QuizQuestionViewDto } from '../dto/view/quiz-question.view-dto';
+import { CreateQuizQuestionDto } from '../dto/create-quiz-question.dto';
+import { UpdateQuizQuestionDto } from '../dto/update-quiz-question.dto';
+import { PublishQuizQuestionDto } from '../dto/publish-quiz-question.dto';
+
 
 @Controller('sa/questions')
 export class QuizQuestionsController {

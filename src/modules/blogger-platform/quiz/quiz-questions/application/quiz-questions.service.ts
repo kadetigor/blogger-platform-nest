@@ -1,9 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateQuizQuestionDto } from './dto/create-quiz-question.dto';
-import { UpdateQuizQuestionDto } from './dto/update-quiz-question.dto';
-import { QuizQuestion } from './domain/quiz-question.entity';
-import { QuizQuestionRepository } from './infrastructure/quiz-question.repository';
-import { PublishQuizQuestionDto } from './dto/publish-quiz-question.dto';
+import { QuizQuestionRepository } from '../infrastructure/quiz-question.repository';
+import { QuizQuestion } from '../domain/quiz-question.entity';
+import { CreateQuizQuestionDto } from '../dto/create-quiz-question.dto';
+import { UpdateQuizQuestionDto } from '../dto/update-quiz-question.dto';
+import { PublishQuizQuestionDto } from '../dto/publish-quiz-question.dto';
+
 
 @Injectable()
 export class QuizQuestionsService {

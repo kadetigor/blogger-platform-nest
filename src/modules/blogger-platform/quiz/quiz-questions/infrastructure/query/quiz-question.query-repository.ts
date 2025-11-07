@@ -1,10 +1,10 @@
 import { FindOptionsWhere, ILike, Repository } from "typeorm";
 import { QuizQuestion } from "../../domain/quiz-question.entity";
 import { Injectable } from "@nestjs/common";
-import { GetQuizQuestionsQueryParam } from "../../dto/input-dto.get-quiz-questions-query-params";
 import { InjectRepository } from "@nestjs/typeorm";
 import { SortDirection } from "src/core/dto/base.query-params.input-dto";
 import { PublishedStatus } from "../../dto/published-status-enum";
+import { GetQuizQuestionsQueryParam } from "../../dto/input/input-dto.get-quiz-questions-query-params";
 
 @Injectable()
 export class QuizQuestionsQueryRepository {
