@@ -1,5 +1,5 @@
 import { InjectRepository } from "@nestjs/typeorm";
-import { QuizQuestion } from "../entities/quiz-question.entity";
+import { QuizQuestion } from "../domain/quiz-question.entity";
 import { Repository } from "typeorm";
 import { CreateQuizQuestionDto } from "../dto/create-quiz-question.dto";
 import { NotFoundException } from "@nestjs/common";

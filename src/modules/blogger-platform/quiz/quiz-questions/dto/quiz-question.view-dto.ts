@@ -1,4 +1,4 @@
-import { QuizQuestion } from "../entities/quiz-question.entity";
+import { QuizQuestion } from "../domain/quiz-question.entity";
 
 export class QuizQuestionViewDto {
   id: string;

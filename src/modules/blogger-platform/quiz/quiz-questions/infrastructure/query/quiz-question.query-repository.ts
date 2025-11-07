@@ -1,5 +1,5 @@
 import { FindOptionsWhere, ILike, Repository } from "typeorm";
-import { QuizQuestion } from "../../entities/quiz-question.entity";
+import { QuizQuestion } from "../../domain/quiz-question.entity";
 import { Injectable } from "@nestjs/common";
 import { GetQuizQuestionsQueryParam } from "../../dto/input-dto.get-quiz-questions-query-params";
 import { InjectRepository } from "@nestjs/typeorm";
