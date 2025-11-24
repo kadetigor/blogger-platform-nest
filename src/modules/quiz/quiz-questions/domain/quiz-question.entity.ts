@@ -1,7 +1,9 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, ManyToMany, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { PublishedStatus } from "../dto/published-status-enum";
+import { PairGameQuiz } from "../../pair-game-quiz/domain/pair-game-quiz.entity";
+import { GameQuestion } from "../../pair-game-quiz/domain/game-question.entity";
 
-@Entity()
+@Entity('quiz_question')
 export class QuizQuestion {
     
     @PrimaryGeneratedColumn('uuid')
@@ -24,5 +26,8 @@ export class QuizQuestion {
 
     @UpdateDateColumn({ name: 'updated_at', nullable: true})
     updatedAt: Date | null
+
+    @OneToMany(() => GameQuestion, gameQuestion => gameQuestion.question)
+    gameQuestions: GameQuestion[]
 
 }

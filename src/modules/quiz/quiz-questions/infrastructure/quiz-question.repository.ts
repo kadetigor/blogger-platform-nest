@@ -51,4 +51,19 @@ export class QuizQuestionRepository {
 
         return true;
     }
+
+    async getRandomPublishedQuestions(limit: number = 5): Promise<QuizQuestion[]> {
+        const questions = await this.repository
+            .createQueryBuilder('question')
+            .where('question.published = :published', { published: true })
+            .orderBy('RANDOM()')
+            .limit(limit)
+            .getMany();
+
+        if (questions.length < limit) {
+            throw new NotFoundException(`Not enough published questions. Found ${questions.length}, need ${limit}`);
+        }
+
+        return questions;
+    }
 }

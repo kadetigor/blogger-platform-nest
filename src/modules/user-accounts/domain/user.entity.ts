@@ -1,6 +1,7 @@
 import { Column, CreateDateColumn, DeleteDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { SecurityDevice } from "./security-devices.entity";
 import { RefreshTokenSession } from "./refresh-token.entity";
+import { GameAnswer } from "../../quiz/pair-game-quiz/domain/game-answer.entity";
 
 @Entity('users')
 export class User {
@@ -50,6 +51,9 @@ export class User {
 
     @OneToMany(() => RefreshTokenSession, (session) => session.user)
     session: RefreshTokenSession[];
+
+    @OneToMany(() => GameAnswer, gameAnswer => gameAnswer.user)
+    gameAnswers: GameAnswer[]
 
     // Business logic methods remain the same
     confirmEmail(code: string): boolean {
