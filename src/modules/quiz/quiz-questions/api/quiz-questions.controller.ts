@@ -9,7 +9,7 @@ import { UpdateQuizQuestionDto } from '../dto/update-quiz-question.dto';
 import { PublishQuizQuestionDto } from '../dto/publish-quiz-question.dto';
 
 
-@Controller('sa/questions')
+@Controller('sa/quiz/questions')
 export class QuizQuestionsController {
   constructor(
     private readonly quizQuestionsService: QuizQuestionsService,
@@ -27,7 +27,6 @@ export class QuizQuestionsController {
       ...result,
       items: result.items.map(quiz => QuizQuestionViewDto.mapToView(quiz))
     };
-    
   }
 
   @Post()
@@ -37,7 +36,7 @@ export class QuizQuestionsController {
     @Body() dto: CreateQuizQuestionDto
   ) {
     const result = await this.quizQuestionsService.create(dto)
-    return result
+    return QuizQuestionViewDto.mapToView(result)
   }
 
   @Delete(':id')
@@ -60,7 +59,10 @@ export class QuizQuestionsController {
   @Put(':id/publish')
   @UseGuards(BasicAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
-  publish(@Param('id', ParseUUIDPipe) id: string, @Body() dto: PublishQuizQuestionDto) {
+  publish(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: PublishQuizQuestionDto
+  ) {
     return this.quizQuestionsService.updateQuestionPublishStatus(id, dto);
   }
 }

@@ -11,11 +11,11 @@ export class GameAnswerRepository {
     ) {}
 
     async saveAnswer(gameAnswer: GameAnswer): Promise<GameAnswer> {
-        return this.repository.save(gameAnswer)
+        return this.repository.save(gameAnswer);
     }
 
-    async findByGameAndPlayer(gameId: string, playerId: string): Promise<GameAnswer | null> {
-        const result = await this.repository.findOne(
+    async findByGameAndPlayer(gameId: string, playerId: string): Promise<GameAnswer[] | null> {
+        const result = await this.repository.find(
             {
                 where: {
                     gameId: gameId,

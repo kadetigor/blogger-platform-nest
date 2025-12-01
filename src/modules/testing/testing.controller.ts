@@ -23,6 +23,12 @@ export class TestingController {
     await this.dataSource.query('TRUNCATE TABLE comment_likes RESTART IDENTITY CASCADE');
     await this.dataSource.query('TRUNCATE TABLE post_likes RESTART IDENTITY CASCADE');
 
+    // Quiz tables
+    await this.dataSource.query('TRUNCATE TABLE game_answers RESTART IDENTITY CASCADE');
+    await this.dataSource.query('TRUNCATE TABLE game_questions RESTART IDENTITY CASCADE');
+    await this.dataSource.query('TRUNCATE TABLE games RESTART IDENTITY CASCADE');
+    await this.dataSource.query('TRUNCATE TABLE quiz_question RESTART IDENTITY CASCADE');
+
     return {
       status: 'succeeded',
     };

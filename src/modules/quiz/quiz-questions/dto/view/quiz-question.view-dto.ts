@@ -1,4 +1,5 @@
 import { QuizQuestion } from "../../domain/quiz-question.entity";
+import { PublishedStatus } from "../published-status-enum";
 
 export class QuizQuestionViewDto {
   id: string;
@@ -9,15 +10,13 @@ export class QuizQuestionViewDto {
   updatedAt: Date | null;
 
   static mapToView(quizQuestion: QuizQuestion): QuizQuestionViewDto {
-    const dto = new QuizQuestionViewDto();
-
-    dto.id = quizQuestion.id;
-    dto.body = quizQuestion.body;
-    dto.correctAnswers = quizQuestion.correctAnswers;
-    dto.published = quizQuestion.published;
-    dto.createdAt = quizQuestion.createdAt;
-    dto.updatedAt = quizQuestion.updatedAt;
-
-    return dto;
+    return {
+      id: quizQuestion.id,
+      body: quizQuestion.body,
+      correctAnswers: quizQuestion.correctAnswers,
+      published: quizQuestion.publishedStatus === PublishedStatus.Published,
+      createdAt: quizQuestion.createdAt,
+      updatedAt: quizQuestion.updatedAt
+    };
   }
 }

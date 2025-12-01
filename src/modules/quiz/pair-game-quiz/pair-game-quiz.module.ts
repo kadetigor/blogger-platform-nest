@@ -6,10 +6,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { GameQuestion } from './domain/game-question.entity';
 import { PairGameQuiz } from './domain/pair-game-quiz.entity';
 import { GameAnswer } from './domain/game-answer.entity';
-import { QuizQueryRepository } from './infrastructure/query/pair-game-quiz.query-repository';
+import { PairGameQuizQueryRepository } from './infrastructure/query/pair-game-quiz.query-repository';
 import { PairGameQuizRepository } from './infrastructure/pair-game-quiz.repository';
 import { GameAnswerRepository } from './infrastructure/query/game-answer.repository';
 import { QuizQuestionsModule } from '../quiz-questions/quiz-questions.module';
+import { GameQuestionRepository } from './infrastructure/game-question.repository';
 
 @Module({
   imports: [
@@ -21,8 +22,9 @@ import { QuizQuestionsModule } from '../quiz-questions/quiz-questions.module';
   providers: [
     PairGameQuizService,
     PairGameQuizRepository,
-    QuizQueryRepository,
-    GameAnswerRepository
+    PairGameQuizQueryRepository,
+    GameAnswerRepository,
+    GameQuestionRepository
   ],
 })
 export class PairGameQuizModule {}

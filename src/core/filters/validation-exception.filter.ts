@@ -1,4 +1,3 @@
-// src/common/filters/validation-exception.filter.ts
 import { ExceptionFilter, Catch, ArgumentsHost, BadRequestException } from '@nestjs/common';
 import { Response } from 'express';
 
@@ -6,17 +5,23 @@ import { Response } from 'express';
 export class ValidationExceptionFilter implements ExceptionFilter {
   catch(exception: BadRequestException, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
+    const request = ctx.getRequest();
     const response = ctx.getResponse<Response>();
     const status = exception.getStatus();
     const exceptionResponse = exception.getResponse() as any;
 
+    // Log the failing request details
+    console.log('🔴 Validation Error on:', request.method, request.url);
+    console.log('🔴 Query params:', request.query);
+    console.log('🔴 Body:', request.body);
+    console.log('🔴 Error:', JSON.stringify(exceptionResponse, null, 2));
+
     // If it's a validation error, format it properly
     if (exceptionResponse.message && Array.isArray(exceptionResponse.message)) {
       const errorsMessages = exceptionResponse.message.map((msg: string) => {
-        // Extract field name from validation message
         const fieldMatch = msg.match(/^(\w+)/);
         const field = fieldMatch ? fieldMatch[1] : 'unknown';
-        
+
         return {
           field: field,
           message: msg

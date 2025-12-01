@@ -1,4 +1,10 @@
-import { PartialType } from '@nestjs/swagger';
-import { CreateQuizQuestionDto } from './create-quiz-question.dto';
+import { IsArray, IsString, Length } from 'class-validator';
 
-export class UpdateQuizQuestionDto extends PartialType(CreateQuizQuestionDto) {}
+export class UpdateQuizQuestionDto {
+    @IsString()
+    @Length(10, 500)
+    body: string;
+
+    @IsArray()
+    correctAnswers: string[];
+}

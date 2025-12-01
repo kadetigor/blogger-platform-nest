@@ -1,5 +1,5 @@
 // src/core/dto/base.query-params.input-dto.ts
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { IsOptional, IsInt, Min, Max, IsEnum } from 'class-validator';
 
 export enum SortDirection {
@@ -21,6 +21,7 @@ export class BaseQueryParams {
   @Max(100) // Add reasonable max limit
   pageSize: number = 10;
 
+  @Transform(({ value }) => value || SortDirection.Desc)
   @IsOptional()
   @IsEnum(SortDirection)
   sortDirection: SortDirection = SortDirection.Desc;

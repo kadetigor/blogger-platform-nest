@@ -5,6 +5,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { SortDirection } from "src/core/dto/base.query-params.input-dto";
 import { PublishedStatus } from "../../dto/published-status-enum";
 import { GetQuizQuestionsQueryParam } from "../../dto/input/input-dto.get-quiz-questions-query-params";
+import { QuizQuestionSortBy } from "../../dto/quiz-question-sort-by";
 
 @Injectable()
 export class QuizQuestionsQueryRepository {
@@ -16,27 +17,30 @@ export class QuizQuestionsQueryRepository {
         const skip = query.calculateSkip();
         const limit = query.pageSize;
 
-        // Build WHERE conditions - use single object for AND conditions
         const whereConditions: FindOptionsWhere<QuizQuestion> = {};
 
-        if (query.bodySerchTerm) {
-            whereConditions.body = ILike(`%${query.bodySerchTerm}%`);
+        if (query.bodySearchTerm) {
+            whereConditions.body = ILike(`%${query.bodySearchTerm}%`);
         }
 
-        // Handle publishStatus filter
-        if (query.publishStatus !== PublishedStatus.All) {
-            whereConditions.publishedStatus = query.publishStatus;
+        if (query.publishedStatus !== PublishedStatus.All) {
+            whereConditions.publishedStatus = query.publishedStatus;
         }
 
-        // Build ORDER BY dynamically
         let orderByColumn: keyof QuizQuestion = 'createdAt';
         switch (query.sortBy) {
+            case QuizQuestionSortBy.Body:
+                orderByColumn = 'body';
+                break;
+            case QuizQuestionSortBy.UpdatedAt:
+                orderByColumn = 'updatedAt';
+                break;
+            case QuizQuestionSortBy.CreatedAt:
             default:
-            orderByColumn = 'createdAt';
-            break;
+                orderByColumn = 'createdAt';
+                break;
         }
 
-        // Get both items and count
         const [users, totalCount] = await this.repository.findAndCount({
             where: Object.keys(whereConditions).length > 0 ? whereConditions : undefined,
             order: {

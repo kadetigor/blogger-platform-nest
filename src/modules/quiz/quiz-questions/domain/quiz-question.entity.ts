@@ -1,6 +1,5 @@
-import { Column, CreateDateColumn, Entity, ManyToMany, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { PublishedStatus } from "../dto/published-status-enum";
-import { PairGameQuiz } from "../../pair-game-quiz/domain/pair-game-quiz.entity";
 import { GameQuestion } from "../../pair-game-quiz/domain/game-question.entity";
 
 @Entity('quiz_question')
@@ -12,11 +11,8 @@ export class QuizQuestion {
     @Column()
     body: string
 
-    @Column({ name: 'correct_answers', type: 'simple-array' })
+    @Column({ name: 'correct_answers', type: 'json' })
     correctAnswers: string[]
-
-    @Column({default: false})
-    published: boolean
 
     @Column({ name: 'published_status', type: 'enum', enum: PublishedStatus, default: PublishedStatus.NotPublished })
     publishedStatus: PublishedStatus
@@ -24,8 +20,13 @@ export class QuizQuestion {
     @CreateDateColumn({ name: 'created_at' })
     createdAt: Date
 
-    @UpdateDateColumn({ name: 'updated_at', nullable: true})
+    @Column({ name: 'updated_at', type: 'timestamp', nullable: true, default: null })
     updatedAt: Date | null
+
+    // Virtual property for API
+    get published(): boolean {
+        return this.publishedStatus === PublishedStatus.Published;
+    }
 
     @OneToMany(() => GameQuestion, gameQuestion => gameQuestion.question)
     gameQuestions: GameQuestion[]

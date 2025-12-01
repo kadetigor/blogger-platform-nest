@@ -15,7 +15,7 @@ export class PairGameQuiz {
     @Column({ type: 'uuid', name: 'second_player_id', nullable: true })
     secondPlayerId: string | null
 
-    @Column({ type: 'simple-array', nullable: true })
+    @Column({ type: 'simple-array', name: 'questions_ids', nullable: true })
     questionsIds: string[] | null
 
     @Column({ type: 'enum', enum: GameStatuses, default: GameStatuses.PendingSecondPlayer })
