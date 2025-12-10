@@ -78,11 +78,13 @@ function mapPlayerProgress(
 
     progress.score = score;
 
-    progress.answers = answers.map(a => ({
-        questionId: a.questionId,
-        answerStatus: a.answerStatus,
-        addedAt: a.addedAt
-    } as AnswerViewDto));
+    progress.answers = answers
+        .sort((a, b) => new Date(a.addedAt).getTime() - new Date(b.addedAt).getTime())
+        .map(a => ({
+            questionId: a.questionId,
+            answerStatus: a.answerStatus,
+            addedAt: a.addedAt
+        } as AnswerViewDto));
 
     return progress;
 }

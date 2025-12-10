@@ -21,7 +21,7 @@ export class PairGameQuizService {
     private readonly gameAnswerRepostirory: GameAnswerRepository,
     private readonly quizQuestionRepository: QuizQuestionRepository
   ) {}
-
+//TODO: put all query repository requests straight to the controller 
   async findGameById(gameId: string): Promise<PairGameQuiz> {
     const result = await this.pairGameQuizQueryRepository.findGameById(gameId);
 
