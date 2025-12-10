@@ -65,4 +65,34 @@ export class PairGameQuizRepository {
 
         return true;
     }
+
+    async updateDeadline(gameId: string, deadline: Date | null): Promise<boolean> {
+        const result = await this.repository.update(
+            gameId,
+            {
+                finishDeadline: deadline,
+            }
+        )
+
+        if (result.affected === 0) {
+            throw new NotFoundException('Could not update game deadline')
+        }
+
+        return true;
+    }
+
+    async updateFinishDate(gameId: string, finishDate: Date): Promise<boolean> {
+        const result = await this.repository.update(
+            gameId,
+            {
+                gameFinishDate: finishDate,
+            }
+        )
+
+        if (result.affected === 0) {
+            throw new NotFoundException('Could not update game finish date')
+        }
+
+        return true;
+    }
 }

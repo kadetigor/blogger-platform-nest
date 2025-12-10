@@ -28,6 +28,15 @@ export class PairGameQuizService {
     if (!result) {
       throw new NotFoundException('Game not found');
     }
+
+    // Check if deadline has passed and auto-finish if needed
+    if (result.finishDeadline && result.status === GameStatuses.Active && new Date() > result.finishDeadline) {
+      await this.autoFinishGameAfterDeadline(result);
+      // Fetch updated game
+      const updatedGame = await this.pairGameQuizQueryRepository.findGameById(gameId);
+      return updatedGame!;
+    }
+
     return result
   }
 
@@ -35,7 +44,13 @@ export class PairGameQuizService {
     // 1. Check if user already has an active or pending game
     const existingGame = await this.pairGameQuizQueryRepository.findCurrentGameByUserId(userId);
     if (existingGame) {
-      throw new ForbiddenException('You are already participating in an active game');
+      // Check if deadline has passed and auto-finish if needed
+      if (existingGame.finishDeadline && existingGame.status === GameStatuses.Active && new Date() > existingGame.finishDeadline) {
+        await this.autoFinishGameAfterDeadline(existingGame);
+        // After finishing, allow user to connect to a new game (fall through)
+      } else {
+        throw new ForbiddenException('You are already participating in an active game');
+      }
     }
 
     // 2. Try to find a pending game (not created by this user)
@@ -72,6 +87,13 @@ export class PairGameQuizService {
     if (!result) {
       throw new NotFoundException('No active game found for current user');
     }
+
+    // Check if deadline has passed and auto-finish if needed
+    if (result.finishDeadline && result.status === GameStatuses.Active && new Date() > result.finishDeadline) {
+      await this.autoFinishGameAfterDeadline(result);
+      throw new NotFoundException('No active game found for current user');
+    }
+
     return result;
   }
 
@@ -82,13 +104,19 @@ export class PairGameQuizService {
       throw new ForbiddenException('No active game found');
     }
 
-    // 2. Check how many answers player has already submitted
+    // 2. Check if deadline has passed and auto-finish if needed
+    if (game.finishDeadline && new Date() > game.finishDeadline) {
+      await this.autoFinishGameAfterDeadline(game);
+      throw new ForbiddenException('Game has ended due to timeout');
+    }
+
+    // 3. Check how many answers player has already submitted
     const answeredCount = await this.gameAnswerRepostirory.countAnswers(game.id, userId);
     if (answeredCount >= 5) {
       throw new ForbiddenException('You have already answered all questions');
     }
 
-    // 3. Get the current question to answer (based on answer count)
+    // 4. Get the current question to answer (based on answer count)
     // Sort questions by order field to ensure correct sequence
     const sortedQuestions = [...game.gameQuestions].sort((a, b) => a.order - b.order);
     const currentQuestion = sortedQuestions[answeredCount];
@@ -96,13 +124,13 @@ export class PairGameQuizService {
       throw new NotFoundException('Question not found');
     }
 
-    // 4. Check if answer is correct
+    // 5. Check if answer is correct
     const answerStatus = await this.quizQuestionRepository.checkAnswer(
       currentQuestion.question.id,
       answerBody
     );
 
-    // 5. Create and save the answer
+    // 6. Create and save the answer
     const gameAnswer = new GameAnswer();
     gameAnswer.gameId = game.id;
     gameAnswer.playerId = userId;
@@ -113,9 +141,9 @@ export class PairGameQuizService {
 
     const savedAnswer = await this.gameAnswerRepostirory.saveAnswer(gameAnswer);
 
-    // 6. Check if game should finish (both players answered all 5 questions)
+    // 7. Check if current player just finished all 5 questions
     if (answeredCount + 1 === 5) {
-      await this.checkAndFinishGame(game);
+      await this.handlePlayerFinished(game, userId);
     }
 
     return savedAnswer;
@@ -148,58 +176,139 @@ export class PairGameQuizService {
     return answerStatus
   }
 
-  private async checkAndFinishGame(game: PairGameQuiz): Promise<void> {
+  /**
+   * Called when a player finishes all 5 questions
+   */
+  private async handlePlayerFinished(game: PairGameQuiz, playerId: string): Promise<void> {
     if (!game.secondPlayerId) {
-      return; // Game can't finish without second player
+      return; // Can't finish game without second player
     }
 
-    // Check if both players have answered all 5 questions
+    // Determine opponent player ID
+    const opponentId = playerId === game.firstPlayerId ? game.secondPlayerId : game.firstPlayerId;
+
+    // Check if opponent has also finished
+    const opponentAnswerCount = await this.gameAnswerRepostirory.countAnswers(game.id, opponentId);
+
+    if (opponentAnswerCount === 5) {
+      // Both players finished - finish game immediately
+      await this.finishGameWithScores(game);
+    } else {
+      // Opponent hasn't finished - set 10 second deadline
+      const deadline = new Date();
+      deadline.setSeconds(deadline.getSeconds() + 10);
+
+      await this.pairGameQuizRepository.updateDeadline(game.id, deadline);
+    }
+  }
+
+  /**
+   * Auto-finish game when deadline expires
+   * Creates incorrect answers for all unanswered questions
+   */
+  private async autoFinishGameAfterDeadline(game: PairGameQuiz): Promise<void> {
+    if (!game.secondPlayerId || game.status !== GameStatuses.Active) {
+      return;
+    }
+
+    // Find which player didn't finish
     const firstPlayerAnswers = await this.gameAnswerRepostirory.countAnswers(game.id, game.firstPlayerId);
     const secondPlayerAnswers = await this.gameAnswerRepostirory.countAnswers(game.id, game.secondPlayerId);
 
-    if (firstPlayerAnswers === 5 && secondPlayerAnswers === 5) {
-      // Calculate scores (count correct answers)
-      const allAnswers = await this.gameAnswerRepostirory.findByGame(game.id);
+    // Create incorrect answers for unanswered questions
+    const sortedQuestions = [...game.gameQuestions].sort((a, b) => a.order - b.order);
 
-      const firstPlayerCorrect = allAnswers
-        .filter(a => a.playerId === game.firstPlayerId && a.answerStatus === AnswerStatuses.Correct)
-        .length;
+    if (firstPlayerAnswers < 5) {
+      await this.createIncorrectAnswersForRemainingQuestions(
+        game,
+        game.firstPlayerId,
+        firstPlayerAnswers,
+        sortedQuestions
+      );
+    }
 
-      const secondPlayerCorrect = allAnswers
-        .filter(a => a.playerId === game.secondPlayerId && a.answerStatus === AnswerStatuses.Correct)
-        .length;
+    if (secondPlayerAnswers < 5) {
+      await this.createIncorrectAnswersForRemainingQuestions(
+        game,
+        game.secondPlayerId,
+        secondPlayerAnswers,
+        sortedQuestions
+      );
+    }
 
-      let firstPlayerScore = firstPlayerCorrect;
-      let secondPlayerScore = secondPlayerCorrect;
+    // Finish game with final scores
+    await this.finishGameWithScores(game);
+  }
 
-      // Determine who finished first and award bonus point
-      const firstPlayerLastAnswer = allAnswers
-        .filter(a => a.playerId === game.firstPlayerId)
-        .sort((a, b) => b.addedAt.getTime() - a.addedAt.getTime())[0];
+  /**
+   * Creates incorrect answers for remaining unanswered questions
+   */
+  private async createIncorrectAnswersForRemainingQuestions(
+    game: PairGameQuiz,
+    playerId: string,
+    currentAnswerCount: number,
+    sortedQuestions: GameQuestion[]
+  ): Promise<void> {
+    for (let i = currentAnswerCount; i < 5; i++) {
+      const question = sortedQuestions[i];
+      if (!question) continue;
 
-      const secondPlayerLastAnswer = allAnswers
-        .filter(a => a.playerId === game.secondPlayerId)
-        .sort((a, b) => b.addedAt.getTime() - a.addedAt.getTime())[0];
+      const gameAnswer = new GameAnswer();
+      gameAnswer.gameId = game.id;
+      gameAnswer.playerId = playerId;
+      gameAnswer.questionId = question.question.id;
+      gameAnswer.answerNumber = i + 1;
+      gameAnswer.answerBody = ''; // Empty answer
+      gameAnswer.answerStatus = AnswerStatuses.Incorrect;
 
-      // Award bonus point to the player who finished first (if they have at least 1 correct answer)
-      if (firstPlayerLastAnswer && secondPlayerLastAnswer) {
-        if (firstPlayerLastAnswer.addedAt < secondPlayerLastAnswer.addedAt && firstPlayerScore > 0) {
-          firstPlayerScore++;
-        } else if (secondPlayerLastAnswer.addedAt < firstPlayerLastAnswer.addedAt && secondPlayerScore > 0) {
-          secondPlayerScore++;
-        }
-      }
+      await this.gameAnswerRepostirory.saveAnswer(gameAnswer);
+    }
+  }
 
-      // Update scores and finish game
-      await this.pairGameQuizRepository.updateScores(game.id, firstPlayerScore, secondPlayerScore);
-      await this.pairGameQuizRepository.updateGameStatus(game.id, GameStatuses.Finished);
+  /**
+   * Calculate scores and finish the game
+   */
+  private async finishGameWithScores(game: PairGameQuiz): Promise<void> {
+    if (!game.secondPlayerId) {
+      return;
+    }
 
-      // Set finish date
-      const finishedGame = await this.pairGameQuizQueryRepository.findGameById(game.id);
-      if (finishedGame) {
-        finishedGame.gameFinishDate = new Date();
-        await this.pairGameQuizRepository.save(finishedGame);
+    // Get all answers
+    const allAnswers = await this.gameAnswerRepostirory.findByGame(game.id);
+
+    // Count correct answers for each player
+    const firstPlayerCorrect = allAnswers
+      .filter(a => a.playerId === game.firstPlayerId && a.answerStatus === AnswerStatuses.Correct)
+      .length;
+
+    const secondPlayerCorrect = allAnswers
+      .filter(a => a.playerId === game.secondPlayerId && a.answerStatus === AnswerStatuses.Correct)
+      .length;
+
+    let firstPlayerScore = firstPlayerCorrect;
+    let secondPlayerScore = secondPlayerCorrect;
+
+    // Determine who finished first and award bonus point
+    const firstPlayerLastAnswer = allAnswers
+      .filter(a => a.playerId === game.firstPlayerId)
+      .sort((a, b) => b.addedAt.getTime() - a.addedAt.getTime())[0];
+
+    const secondPlayerLastAnswer = allAnswers
+      .filter(a => a.playerId === game.secondPlayerId)
+      .sort((a, b) => b.addedAt.getTime() - a.addedAt.getTime())[0];
+
+    // Award bonus point to the player who finished first (if they have at least 1 correct answer)
+    if (firstPlayerLastAnswer && secondPlayerLastAnswer) {
+      if (firstPlayerLastAnswer.addedAt < secondPlayerLastAnswer.addedAt && firstPlayerScore > 0) {
+        firstPlayerScore++;
+      } else if (secondPlayerLastAnswer.addedAt < firstPlayerLastAnswer.addedAt && secondPlayerScore > 0) {
+        secondPlayerScore++;
       }
     }
+
+    // Update game with final state using targeted updates
+    await this.pairGameQuizRepository.updateScores(game.id, firstPlayerScore, secondPlayerScore);
+    await this.pairGameQuizRepository.updateGameStatus(game.id, GameStatuses.Finished);
+    await this.pairGameQuizRepository.updateFinishDate(game.id, new Date());
   }
 }

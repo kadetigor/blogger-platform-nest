@@ -30,6 +30,9 @@ export class PairGameQuiz {
     @Column({ type: 'timestamp', name: 'game_finish_date', nullable: true })
     gameFinishDate: Date | null
 
+    @Column({ type: 'timestamp', name: 'finish_deadline', nullable: true })
+    finishDeadline: Date | null
+
     @Column({ type: 'int', name: 'first_player_score', default: 0 })
     firstPlayerScore: number
 
