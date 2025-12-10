@@ -10,6 +10,9 @@ import { PairGameQuizQueryRepository } from '../infrastructure/query/pair-game-q
 import { GetAllMyGamesQueryParams } from '../dto/input/get-all-users-games.input-query-params';
 import { PaginatedGamesViewDto } from '../dto/view/paginated-game.view-dto';
 import { MyStatisticViewModel } from '../dto/view/my-statistic.view-dto';
+import { GetTopPlayersQueryParams } from '../dto/input/get-top-players.input-query-params';
+import { PaginatedTopPlayerViewDto } from '../dto/view/paginated-top-players.view-dto';
+import { TopGamePlayerViewDto } from '../dto/view/top-game-player.view-dto';
 
 @Controller('pair-game-quiz')
 export class PairGameQuizController {
@@ -66,6 +69,44 @@ export class PairGameQuizController {
     const userId = req.user.userId
 
     return this.pairGameQuizQueryRepository.findMyStatistics(userId);
+  }
+
+  @Get('users/top')
+  async getTopPlayers(
+    @Query() query: GetTopPlayersQueryParams
+  ): Promise<PaginatedTopPlayerViewDto> {
+    const result = await this.pairGameQuizQueryRepository.findTopPlayers(query);
+
+    // Collect all unique player IDs
+    const playerIds = result.items.map(item => item.playerId);
+
+    // Fetch all player logins in one batch query
+    const players = await Promise.all(
+      playerIds.map(id => this.usersQueryRepository.findById(id))
+    );
+    const playerMap = new Map(players.map(p => [p!.id, p!.login]));
+
+    // Map results to TopGamePlayerViewDto
+    const mappedPlayers: TopGamePlayerViewDto[] = result.items.map(item => ({
+      sumScore: item.sumScore,
+      avgScores: item.avgScores,
+      gamesCount: item.gamesCount,
+      winsCount: item.winsCount,
+      lossesCount: item.lossesCount,
+      drawsCount: item.drawsCount,
+      player: {
+        id: item.playerId,
+        login: playerMap.get(item.playerId)!
+      }
+    }));
+
+    return {
+      items: mappedPlayers,
+      totalCount: result.totalCount,
+      pagesCount: Math.ceil(result.totalCount / query.pageSize),
+      page: query.pageNumber,
+      pageSize: query.pageSize
+    };
   }
 
   // Returns current unfinished user game

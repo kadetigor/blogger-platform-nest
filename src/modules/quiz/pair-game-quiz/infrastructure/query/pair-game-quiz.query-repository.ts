@@ -5,6 +5,8 @@ import { Not, Repository, In } from "typeorm";
 import { GameStatuses } from "../../dto/enums/game-statuses.enum";
 import { GetAllMyGamesQueryParams } from "../../dto/input/get-all-users-games.input-query-params";
 import { SortDirection } from "src/core/dto/base.query-params.input-dto";
+import { MyStatisticViewModel } from "../../dto/view/my-statistic.view-dto";
+import { GetTopPlayersQueryParams } from "../../dto/input/get-top-players.input-query-params";
 
 @Injectable()
 export class PairGameQuizQueryRepository {
@@ -86,14 +88,7 @@ export class PairGameQuizQueryRepository {
     }
 
 
-    async findMyStatistics(userId: string): Promise<{
-        sumScore: number;
-        avgScores: number;
-        gamesCount: number;
-        winsCount: number;
-        lossesCount: number;
-        drawsCount: number;
-    }> {
+    async findMyStatistics(userId: string): Promise<MyStatisticViewModel> {
         const result = await this.repository
             .createQueryBuilder('game')
             .select([
@@ -159,6 +154,105 @@ export class PairGameQuizQueryRepository {
             winsCount: Number(result.winscount || 0),
             lossesCount: Number(result.lossescount || 0),
             drawsCount: Number(result.drawscount || 0)
+        };
+    }
+
+    async findTopPlayers(query: GetTopPlayersQueryParams): Promise<{
+        items: Array<{
+            playerId: string;
+            sumScore: number;
+            avgScores: number;
+            gamesCount: number;
+            winsCount: number;
+            lossesCount: number;
+            drawsCount: number;
+        }>;
+        totalCount: number;
+    }> {
+        const skip = query.calculateSkip();
+        const limit = query.pageSize;
+
+        // Parse sort criteria
+        const sortCriteria = query.getParsedSortCriteria();
+
+        // Build ORDER BY clause
+        const orderByClause = sortCriteria
+            .map(criterion => `${criterion.field.toLowerCase()} ${criterion.direction}`)
+            .join(', ');
+
+        // Build the query using raw SQL for better control
+        const countQuery = `
+            SELECT COUNT(DISTINCT player_id) as total
+            FROM (
+                SELECT "game"."first_player_id" as player_id
+                FROM "games" "game"
+                WHERE "game"."status" = $1 AND "game"."deleted_at" IS NULL
+
+                UNION
+
+                SELECT "game"."second_player_id" as player_id
+                FROM "games" "game"
+                WHERE "game"."status" = $1 AND "game"."deleted_at" IS NULL
+            ) as all_players
+        `;
+
+        const dataQuery = `
+            SELECT
+                player_games.player_id as playerId,
+                COUNT(*)::int as gamesCount,
+                COALESCE(SUM(player_games.player_score), 0)::int as sumScore,
+                COALESCE(ROUND(AVG(player_games.player_score)::numeric, 2), 0) as avgScores,
+                COALESCE(SUM(player_games.is_win), 0)::int as winsCount,
+                COALESCE(SUM(player_games.is_loss), 0)::int as lossesCount,
+                COALESCE(SUM(player_games.is_draw), 0)::int as drawsCount
+            FROM (
+                SELECT
+                    "game"."first_player_id" as player_id,
+                    "game"."first_player_score" as player_score,
+                    CASE WHEN "game"."first_player_score" > "game"."second_player_score" THEN 1 ELSE 0 END as is_win,
+                    CASE WHEN "game"."first_player_score" < "game"."second_player_score" THEN 1 ELSE 0 END as is_loss,
+                    CASE WHEN "game"."first_player_score" = "game"."second_player_score" THEN 1 ELSE 0 END as is_draw
+                FROM "games" "game"
+                WHERE "game"."status" = $1 AND "game"."deleted_at" IS NULL
+
+                UNION ALL
+
+                SELECT
+                    "game"."second_player_id" as player_id,
+                    "game"."second_player_score" as player_score,
+                    CASE WHEN "game"."second_player_score" > "game"."first_player_score" THEN 1 ELSE 0 END as is_win,
+                    CASE WHEN "game"."second_player_score" < "game"."first_player_score" THEN 1 ELSE 0 END as is_loss,
+                    CASE WHEN "game"."second_player_score" = "game"."first_player_score" THEN 1 ELSE 0 END as is_draw
+                FROM "games" "game"
+                WHERE "game"."status" = $1 AND "game"."deleted_at" IS NULL
+            ) as player_games
+            GROUP BY player_games.player_id
+            ORDER BY ${orderByClause}
+            LIMIT $2 OFFSET $3
+        `;
+
+        // Execute queries
+        const [countResult, results] = await Promise.all([
+            this.repository.manager.query(countQuery, [GameStatuses.Finished]),
+            this.repository.manager.query(dataQuery, [GameStatuses.Finished, limit, skip])
+        ]);
+
+        const totalCount = parseInt(countResult[0]?.total || '0', 10);
+
+        // Map results to proper types
+        const items = results.map((result: any) => ({
+            playerId: result.playerid,
+            sumScore: Number(result.sumscore || 0),
+            avgScores: Number(result.avgscores || 0),
+            gamesCount: Number(result.gamescount || 0),
+            winsCount: Number(result.winscount || 0),
+            lossesCount: Number(result.lossescount || 0),
+            drawsCount: Number(result.drawscount || 0)
+        }));
+
+        return {
+            items,
+            totalCount
         };
     }
 }
